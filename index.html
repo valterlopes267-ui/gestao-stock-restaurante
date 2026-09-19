@@ -3,19 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Stock - Restaurante</title>
+    <title>Gestão de Stock e Vendas - Restaurante</title>
 
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        h2, h3 { text-align: center; color: #333; }
+        .container { max-width: 950px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h2, h3, h4 { text-align: center; color: #333; margin-top: 15px; }
         .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
         .form-group { flex: 1; margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; color: #555;}
         input, select, button { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
         
         /* Botões */
-        button { background-color: #007bff; color: white; font-size: 16px; font-weight: bold; cursor: pointer; border: none; margin-top: 10px; }
+        button { background-color: #007bff; color: white; font-size: 16px; font-weight: bold; cursor: pointer; border: none; margin-top: 10px; border-radius: 4px; }
         button:hover { background-color: #0056b3; }
         .btn-saida { background-color: #dc3545; }
         .btn-saida:hover { background-color: #c82333; }
@@ -23,7 +23,15 @@
         .btn-acao-pequeno { background-color: #28a745; width: auto; padding: 5px 15px; font-size: 14px; margin-top: 0; }
         .btn-apagar { background-color: #dc3545; color: white; font-size: 12px; padding: 5px 10px; margin: 0; width: auto; }
         .btn-backup { background-color: #17a2b8; margin-top: 15px; }
-        .btn-backup:hover { background-color: #138496; }
+        
+        /* Cartões do Topo (Dashboard) */
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin: 20px 0; }
+        .card-stat { background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 5px solid #007bff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .card-stat.verde { border-left-color: #28a745; }
+        .card-stat.laranja { border-left-color: #fd7e14; }
+        .card-stat.roxo { border-left-color: #6f42c1; }
+        .card-stat h4 { margin: 0 0 5px 0; text-align: left; color: #666; font-size: 0.85em; text-transform: uppercase; }
+        .card-stat .valor-card { font-size: 1.3em; font-weight: bold; color: #222; }
         
         /* Tabelas */
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9em; }
@@ -33,22 +41,21 @@
         .mov-entrada { color: #28a745; font-weight: bold; }
         .mov-saida { color: #dc3545; font-weight: bold; }
         
-        /* Painéis e Layout */
-        .painel-financeiro, .painel-admin { background-color: #e9ecef; padding: 15px; border-radius: 5px; margin-top: 20px; }
-        .painel-financeiro { text-align: center; font-size: 1.2em; font-weight: bold; }
+        /* Painéis */
+        .painel-box { background-color: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #e9ecef; margin-top: 20px; }
+        .painel-financeiro { background-color: #e9ecef; padding: 15px; border-radius: 5px; text-align: center; font-size: 1.1em; font-weight: bold; margin-top: 15px; }
         .valor-mt { color: #28a745; }
-        .seccao-titulo { margin-top: 40px; border-bottom: 2px solid #ccc; padding-bottom: 5px; }
+        .seccao-titulo { margin-top: 35px; border-bottom: 2px solid #ccc; padding-bottom: 5px; text-align: left; }
         
-        /* Cabeçalho do Utilizador */
+        /* Cabeçalho */
         .header-usuario { display: flex; justify-content: space-between; align-items: center; background: #e2e8f0; padding: 10px 15px; border-radius: 5px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;}
         .area-trocar-senha { display: flex; gap: 5px; }
         
         /* Controlo de Ecrãs */
-        #telaSistema { display: none; }
-        #painelAdminSection { display: none; }
+        #telaSistema, #painelAdminSection, #painelVendedorSection { display: none; }
         #loadingNuvem { text-align: center; font-weight: bold; color: #007bff; padding: 20px; font-size: 1.1em; }
 
-        /* Ajustes Responsivos para Telemóveis */
+        /* Ajustes para Telemóveis */
         @media (max-width: 768px) {
             body { padding: 10px; }
             .container { padding: 10px; }
@@ -89,10 +96,11 @@
             <div class="area-trocar-senha">
                 <input type="password" id="inputNovaSenha" placeholder="Nova palavra-passe" style="width: 150px; padding: 5px;">
                 <button class="btn-acao-pequeno" onclick="mudarMinhaSenha()">Alterar Senha</button>
-                <button class="btn-logout" onclick="fazerLogout()">Sair da Conta</button>
+                <button class="btn-logout" onclick="fazerLogout()">Sair</button>
             </div>
         </div>
-        
+
+        <!-- FORMULÁRIO DE MOVIMENTO DE STOCK -->
         <h2 class="seccao-titulo">Registar Movimento</h2>
         <form id="formStock">
             <div class="form-group">
@@ -114,12 +122,12 @@
                     <input type="number" id="quantidade" required min="0.1" step="0.1" placeholder="Ex: 5">
                 </div>
                 <div class="form-group" id="grupoPreco">
-                    <label for="preco">Preço (Custo Unitário ou Valor Total)</label>
+                    <label for="preco">Preço (Custo Unitário ou Valor de Venda Total)</label>
                     <input type="number" id="preco" min="0" step="0.5" placeholder="Ex: 1500">
                 </div>
             </div>
 
-            <!-- SEÇÃO DE PAGAMENTO (APARECE APENAS NAS VENDAS A CLIENTES) -->
+            <!-- SEÇAO DE PAGAMENTO -->
             <div class="form-group" id="grupoPagamento" style="display: none; background: #e8f4fd; padding: 12px; border-radius: 5px; border: 1px solid #bbe1fa;">
                 <label for="metodoPagamento" style="color: #0056b3;">Método de Pagamento (Venda)</label>
                 <select id="metodoPagamento">
@@ -133,31 +141,106 @@
             <button type="submit" id="btnRegistar">Registar Movimento</button>
         </form>
 
-        <h3 class="seccao-titulo">Stock Disponível na Despensa</h3>
-        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Produto</th>
-                        <th>Qtd</th>
-                        <th class="col-fin">Custo Médio</th>
-                        <th class="col-fin">Valor Total</th>
-                        <th class="col-admin">Ação</th>
-                    </tr>
-                </thead>
-                <tbody id="corpoTabelaStock"></tbody>
-            </table>
+        <!-- VISÃO EXCLUSIVA DO VENDEDOR (FUNCIONÁRIO) -->
+        <div id="painelVendedorSection">
+            <h2 class="seccao-titulo">O Meu Desempenho de Vendas</h2>
+            <div class="cards-grid">
+                <div class="card-stat verde">
+                    <h4>Meu Total Vendido</h4>
+                    <div class="valor-card" id="vendedorTotalValor">0.00 MT</div>
+                </div>
+                <div class="card-stat laranja">
+                    <h4>Minhas Vendas Realizadas</h4>
+                    <div class="valor-card" id="vendedorQtdVendas">0</div>
+                </div>
+            </div>
+
+            <h3>Meu Histórico de Vendas</h3>
+            <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data & Hora</th>
+                            <th>Produto</th>
+                            <th>Qtd</th>
+                            <th>Valor Total</th>
+                            <th>Método Pagamento</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoTabelaMinhasVendas"></tbody>
+                </table>
+            </div>
         </div>
 
         <!-- PAINEL EXCLUSIVO DO ADMINISTRADOR -->
         <div id="painelAdminSection">
+            
+            <h2 class="seccao-titulo">Painel Executivo do Administrador</h2>
+            
+            <!-- BLOCO 1: CARTÕES RESUMO -->
+            <div class="cards-grid">
+                <div class="card-stat verde">
+                    <h4>Total Vendido (Geral)</h4>
+                    <div class="valor-card" id="cardTotalVendido">0.00 MT</div>
+                </div>
+                <div class="card-stat laranja">
+                    <h4>Melhor Vendedor</h4>
+                    <div class="valor-card" id="cardMelhorVendedor">-</div>
+                </div>
+                <div class="card-stat roxo">
+                    <h4>Canal Principal</h4>
+                    <div class="valor-card" id="cardCanalPrincipal">-</div>
+                </div>
+            </div>
+
+            <!-- BLOCO 2: TABELA DE VALORES POR VENDEDOR -->
+            <h3>Faturamento por Vendedor / Perfil</h3>
+            <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Vendedor / Perfil</th>
+                            <th>Nº de Vendas</th>
+                            <th>Valor Total Vendido (MT)</th>
+                            <th>% do Faturamento</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoTabelaVendedores"></tbody>
+                </table>
+            </div>
+
+            <!-- BLOCO 3: FECHO DE CAIXA POR MÉTODO DE PAGAMENTO -->
+            <div class="painel-box">
+                <h3 style="margin-top:0;">Fecho de Caixa (Por Método de Pagamento)</h3>
+                <div class="cards-grid" style="margin-bottom:0;">
+                    <div class="card-stat">
+                        <h4>💵 Numerário (Espécie)</h4>
+                        <div class="valor-card" id="fechoNumerario">0.00 MT</div>
+                    </div>
+                    <div class="card-stat">
+                        <h4>📱 M-Pesa</h4>
+                        <div class="valor-card" id="fechoMpesa">0.00 MT</div>
+                    </div>
+                    <div class="card-stat">
+                        <h4>📱 e-Mola</h4>
+                        <div class="valor-card" id="fechoEmola">0.00 MT</div>
+                    </div>
+                    <div class="card-stat">
+                        <h4>💳 POS (Cartão)</h4>
+                        <div class="valor-card" id="fechoPos">0.00 MT</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AUDITORIA DO STOCK DE ARMAZÉM -->
+            <h3 class="seccao-titulo">Stock Disponível e Valor em Armazém</h3>
             <div class="painel-financeiro">
-                Valor Total de todo o Armazém: <span id="valorTotalGeral" class="valor-mt">0.00 MT</span>
+                Valor do Stock na Despensa: <span id="valorTotalGeral" class="valor-mt">0.00 MT</span>
             </div>
             
-            <button class="btn-backup" onclick="fazerBackup()">💾 Descarregar Cópia de Segurança (Backup)</button>
-            
-            <h3 class="seccao-titulo">Histórico Completo de Movimentos</h3>
+            <button class="btn-backup" onclick="fazerBackup()">💾 Descarregar Cópia de Segurança (Backup JSON)</button>
+
+            <h3>Histórico Geral de Transações</h3>
             <div style="overflow-x:auto; -webkit-overflow-scrolling: touch;">
                 <table>
                     <thead>
@@ -175,16 +258,15 @@
             </div>
 
             <!-- GESTÃO DE UTILIZADORES -->
-            <div class="painel-admin" style="margin-top: 40px;">
-                <h3>Gestão de Utilizadores e Funcionários</h3>
-                
-                <div class="form-row" style="background: white; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-                    <input type="text" id="novoUser" placeholder="Nome do novo funcionário" autocomplete="off">
+            <div class="painel-box" style="margin-top: 30px;">
+                <h3>Gestão de Utilizadores (Perfis da Equipa)</h3>
+                <div class="form-row">
+                    <input type="text" id="novoUser" placeholder="Nome do funcionário" autocomplete="off">
                     <input type="password" id="novaPass" placeholder="Palavra-passe">
                     <button onclick="criarUsuario()" style="margin-top: 0;">Criar Conta</button>
                 </div>
 
-                <h4>Contas Existentes</h4>
+                <h4>Contas de Vendedores Registadas</h4>
                 <div style="overflow-x: auto;">
                     <table>
                         <thead>
@@ -197,12 +279,30 @@
                     </table>
                 </div>
             </div>
+
+        </div>
+
+        <!-- TABELA DE STOCK (VISÍVEL PARA TODOS) -->
+        <h3 class="seccao-titulo">Lista de Produtos em Stock</h3>
+        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Produto</th>
+                        <th>Qtd</th>
+                        <th class="col-fin">Custo Médio</th>
+                        <th class="col-fin">Valor Total</th>
+                        <th class="col-admin">Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabelaStock"></tbody>
+            </table>
         </div>
 
     </div>
 </div>
 
-<!-- LÓGICA DO SISTEMA E LIGAÇÃO FIREBASE -->
+<!-- LÓGICA DO SISTEMA E FIREBASE -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -225,11 +325,10 @@
     let usuarioAtual = null;
     let temporizadorInatividade;
 
-    // Iniciar escuta em tempo real do Firestore
+    // Sincronização em tempo real do Firestore
     onSnapshot(doc(db, "sistema", "usuarios"), async (docSnap) => {
-        if (docSnap.exists()) {
-            usuarios = docSnap.data();
-        } else {
+        if (docSnap.exists()) { usuarios = docSnap.data(); } 
+        else {
             usuarios = { "admin": { senha: "123", tipo: "admin" } };
             await setDoc(doc(db, "sistema", "usuarios"), usuarios);
         }
@@ -237,46 +336,33 @@
     });
 
     onSnapshot(doc(db, "sistema", "stock"), async (docSnap) => {
-        if (docSnap.exists()) {
-            stock = docSnap.data();
-        } else {
-            stock = {};
-            await setDoc(doc(db, "sistema", "stock"), stock);
-        }
+        if (docSnap.exists()) stock = docSnap.data();
+        else { stock = {}; await setDoc(doc(db, "sistema", "stock"), stock); }
         if(usuarioAtual) atualizarTabelas();
     });
 
     onSnapshot(doc(db, "sistema", "historico"), async (docSnap) => {
-        if (docSnap.exists()) {
-            historico = docSnap.data().lista || [];
-        } else {
-            historico = [];
-            await setDoc(doc(db, "sistema", "historico"), { lista: [] });
-        }
+        if (docSnap.exists()) historico = docSnap.data().lista || [];
+        else { historico = []; await setDoc(doc(db, "sistema", "historico"), { lista: [] }); }
         if(usuarioAtual) atualizarTabelas();
     });
 
     function verificarEstadoInicial() {
         let elementoLoading = document.getElementById('loadingNuvem');
         if (elementoLoading) elementoLoading.style.display = 'none';
-        
-        if (!usuarioAtual) {
-            document.getElementById('telaLogin').style.display = 'block';
-        }
+        if (!usuarioAtual) document.getElementById('telaLogin').style.display = 'block';
         if (usuarioAtual) atualizarTabelaUsuarios();
     }
 
-    // --- SEGURANÇA: LOGOUT AUTOMÁTICO ---
+    // LOGOUT AUTOMÁTICO
     function resetarTemporizador() {
         clearTimeout(temporizadorInatividade);
-        if (usuarioAtual) {
-            temporizadorInatividade = setTimeout(logoutPorInatividade, 300000); // 5 minutos
-        }
+        if (usuarioAtual) temporizadorInatividade = setTimeout(logoutPorInatividade, 300000); // 5 min
     }
 
     function logoutPorInatividade() {
         if (usuarioAtual) {
-            alert("Sessão terminada automaticamente por inatividade (5 minutos).");
+            alert("Sessão encerrada por inatividade.");
             fazerLogout();
         }
     }
@@ -286,20 +372,16 @@
     document.onkeypress = resetarTemporizador;
     document.ontouchstart = resetarTemporizador;
 
-    // --- BACKUP ---
     window.fazerBackup = function() {
-        let dadosParaGuardar = { usuarios, stock, historico };
-        let blob = new Blob([JSON.stringify(dadosParaGuardar, null, 2)], { type: "application/json" });
+        let blob = new Blob([JSON.stringify({ usuarios, stock, historico }, null, 2)], { type: "application/json" });
         let link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
         link.download = "backup_restaurante_" + new Date().toISOString().split('T')[0] + ".json";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        alert("Cópia de segurança descarregada com sucesso!");
     };
 
-    // --- LOGIN ---
     window.fazerLogin = function() {
         let user = document.getElementById('loginUser').value.trim().toLowerCase();
         let pass = document.getElementById('loginPass').value;
@@ -315,7 +397,7 @@
             atualizarTabelas();
             resetarTemporizador();
         } else {
-            alert("Utilizador ou Palavra-passe incorretos!");
+            alert("Utilizador ou palavra-passe incorretos!");
         }
     };
 
@@ -326,43 +408,36 @@
         document.getElementById('telaLogin').style.display = 'block';
         document.getElementById('loginUser').value = '';
         document.getElementById('loginPass').value = '';
-        document.getElementById('inputNovaSenha').value = '';
     };
 
     window.mudarMinhaSenha = async function() {
         let novaSenha = document.getElementById('inputNovaSenha').value;
-        if (novaSenha.trim() === "") {
-            alert("Escreva uma nova palavra-passe.");
-            return;
-        }
+        if (!novaSenha.trim()) { alert("Digite a nova palavra-passe."); return; }
         usuarios[usuarioAtual.nome].senha = novaSenha;
         await setDoc(doc(db, "sistema", "usuarios"), usuarios);
-        alert("Palavra-passe alterada com sucesso!");
+        alert("Palavra-passe alterada!");
         document.getElementById('inputNovaSenha').value = '';
     };
 
-    // --- GESTÃO UTILIZADORES ---
     window.criarUsuario = async function() {
         let novoUser = document.getElementById('novoUser').value.trim().toLowerCase();
         let novaPass = document.getElementById('novaPass').value;
 
-        if (novoUser === "" || novaPass === "") { alert("Preencha os campos."); return; }
-        if (usuarios[novoUser]) { alert("Este utilizador já existe!"); return; }
+        if (!novoUser || !novaPass) { alert("Preencha os dados."); return; }
+        if (usuarios[novoUser]) { alert("Utilizador já existe!"); return; }
 
         usuarios[novoUser] = { senha: novaPass, tipo: "funcionario" };
         await setDoc(doc(db, "sistema", "usuarios"), usuarios);
-        alert("Funcionário criado com sucesso!");
-        
+        alert("Vendedor criado com sucesso!");
         document.getElementById('novoUser').value = '';
         document.getElementById('novaPass').value = '';
     };
 
     window.eliminarUsuario = async function(nomeParaEliminar) {
-        if (nomeParaEliminar === 'admin') { alert("O admin principal não pode ser eliminado."); return; }
-        if (confirm("Tem certeza que quer eliminar " + nomeParaEliminar.toUpperCase() + "?")) {
+        if (nomeParaEliminar === 'admin') return;
+        if (confirm("Eliminar o utilizador " + nomeParaEliminar.toUpperCase() + "?")) {
             delete usuarios[nomeParaEliminar];
             await setDoc(doc(db, "sistema", "usuarios"), usuarios);
-            alert("Conta eliminada.");
         }
     };
 
@@ -383,6 +458,7 @@
     function configurarVisaoBaseadoNoPerfil() {
         let isAdmin = usuarioAtual.tipo === 'admin';
         document.getElementById('painelAdminSection').style.display = isAdmin ? 'block' : 'none';
+        document.getElementById('painelVendedorSection').style.display = !isAdmin ? 'block' : 'none';
         
         let colunasFin = document.getElementsByClassName('col-fin');
         for (let i = 0; i < colunasFin.length; i++) colunasFin[i].style.display = isAdmin ? 'table-cell' : 'none';
@@ -397,15 +473,10 @@
         let grupoPagamento = document.getElementById('grupoPagamento');
         let btn = document.getElementById('btnRegistar');
         
-        // Mostrar campo de método de pagamento apenas se for venda a cliente
-        if (mov === 'saida_cliente') {
-            grupoPagamento.style.display = 'block';
-        } else {
-            grupoPagamento.style.display = 'none';
-        }
+        grupoPagamento.style.display = (mov === 'saida_cliente') ? 'block' : 'none';
 
         if (mov.startsWith('saida')) {
-            grupoPreco.style.display = 'none';
+            grupoPreco.style.display = (mov === 'saida_cliente') ? 'block' : 'none';
             btn.className = 'btn-saida';
             if(mov === 'saida_cozinha') btn.innerText = 'Registar Saída para Cozinha';
             else if(mov === 'saida_cliente') btn.innerText = 'Registar Venda ao Cliente';
@@ -418,20 +489,21 @@
     };
 
     function formatarMT(valor) {
-        return parseFloat(valor).toLocaleString('pt-MZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' MT';
+        return parseFloat(valor || 0).toLocaleString('pt-MZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' MT';
     }
 
     window.apagarProdutoStock = async function(nomeProduto) {
-        if (confirm(`Apagar o produto "${nomeProduto.toUpperCase()}" definitivamente?`)) {
+        if (confirm(`Apagar o produto "${nomeProduto.toUpperCase()}"?`)) {
             delete stock[nomeProduto];
             await setDoc(doc(db, "sistema", "stock"), stock);
-            alert("Produto apagado!");
         }
     };
 
     function atualizarTabelas() {
         if(!usuarioAtual) return;
         let isAdmin = usuarioAtual.tipo === 'admin';
+
+        // 1. ATUALIZAR STOCK
         let corpoStock = document.getElementById('corpoTabelaStock');
         corpoStock.innerHTML = '';
         let totalGeralArmazem = 0;
@@ -444,7 +516,7 @@
             let colunasFinHtml = isAdmin ? 
                 `<td class="col-fin">${formatarMT(precoMedioUnitario)}</td>
                  <td class="col-fin"><strong>${formatarMT(dados.preco_total)}</strong></td>
-                 <td class="col-admin"><button class="btn-apagar" onclick="apagarProdutoStock('${produto}')">Apagar Produto</button></td>` : '';
+                 <td class="col-admin"><button class="btn-apagar" onclick="apagarProdutoStock('${produto}')">Apagar</button></td>` : '';
 
             corpoStock.innerHTML += `<tr>
                 <td>${produto.toUpperCase()}</td>
@@ -453,35 +525,103 @@
             </tr>`;
         }
         
+        // 2. PROCESSAR VENDAS & FECHO FINANCEIRO
+        let vendas = historico.filter(h => h.movimento === 'saida_cliente');
+        let totalVendidoGeral = 0;
+        let porVendedor = {};
+        let porMetodo = { 'Numerário': 0, 'M-Pesa': 0, 'e-Mola': 0, 'POS': 0 };
+
+        vendas.forEach(v => {
+            let valor = v.valorAfetado || 0;
+            totalVendidoGeral += valor;
+
+            // Por Vendedor
+            if (!porVendedor[v.usuario]) porVendedor[v.usuario] = { qtd: 0, total: 0 };
+            porVendedor[v.usuario].qtd += 1;
+            porVendedor[v.usuario].total += valor;
+
+            // Por Método
+            let m = v.pagamento || 'Numerário';
+            porMetodo[m] = (porMetodo[m] || 0) + valor;
+        });
+
         if (isAdmin) {
             document.getElementById('valorTotalGeral').innerText = formatarMT(totalGeralArmazem);
+            document.getElementById('cardTotalVendido').innerText = formatarMT(totalVendidoGeral);
+
+            // Tabela de Vendedores
+            let corpoVendedores = document.getElementById('corpoTabelaVendedores');
+            corpoVendedores.innerHTML = '';
             
+            let melhorVendedorNome = "-";
+            let maiorValorVendido = -1;
+
+            for (let user in porVendedor) {
+                let d = porVendedor[user];
+                let perc = totalVendidoGeral > 0 ? ((d.total / totalVendidoGeral) * 100).toFixed(1) : 0;
+                
+                if (d.total > maiorValorVendido) {
+                    maiorValorVendido = d.total;
+                    melhorVendedorNome = user.toUpperCase() + ` (${formatarMT(d.total)})`;
+                }
+
+                corpoVendedores.innerHTML += `<tr>
+                    <td style="text-transform: capitalize;"><b>${user}</b></td>
+                    <td>${d.qtd}</td>
+                    <td><strong>${formatarMT(d.total)}</strong></td>
+                    <td>${perc}%</td>
+                </tr>`;
+            }
+
+            document.getElementById('cardMelhorVendedor').innerText = melhorVendedorNome;
+
+            // Fecho de Caixa
+            document.getElementById('fechoNumerario').innerText = formatarMT(porMetodo['Numerário']);
+            document.getElementById('fechoMpesa').innerText = formatarMT(porMetodo['M-Pesa']);
+            document.getElementById('fechoEmola').innerText = formatarMT(porMetodo['e-Mola']);
+            document.getElementById('fechoPos').innerText = formatarMT(porMetodo['POS']);
+
+            // Método Líder
+            let canalLider = Object.keys(porMetodo).reduce((a, b) => porMetodo[a] > porMetodo[b] ? a : b);
+            document.getElementById('cardCanalPrincipal').innerText = porMetodo[canalLider] > 0 ? canalLider : '-';
+
+            // Histórico Geral
             let corpoHistorico = document.getElementById('corpoTabelaHistorico');
             corpoHistorico.innerHTML = '';
-            let historicoInvertido = [...historico].reverse(); 
-            
-            historicoInvertido.forEach(reg => {
+            [...historico].reverse().forEach(reg => {
                 let corMov = reg.movimento === 'entrada' ? 'mov-entrada' : 'mov-saida';
                 let sinal = reg.movimento === 'entrada' ? '+' : '-';
-                
-                let textoMovimento = "ENTRADA";
-                if(reg.movimento === 'saida_cozinha') textoMovimento = "SAÍDA (COZINHA)";
-                else if(reg.movimento === 'saida_cliente') {
-                    let metodo = reg.pagamento ? reg.pagamento : 'Numerário';
-                    textoMovimento = `VENDA CLIENTE <br><small style="color: #007bff; font-weight: bold;">[Pagto: ${metodo}]</small>`;
-                }
-                else if(reg.movimento === 'saida_perda') textoMovimento = "PERDA/QUEBRA";
-                
+                let textoMov = reg.movimento === 'saida_cliente' ? `VENDA (${reg.pagamento || 'Numerário'})` : reg.movimento.toUpperCase();
+
                 corpoHistorico.innerHTML += `<tr>
                     <td>${reg.data}</td>
                     <td style="text-transform: capitalize;">${reg.usuario}</td>
                     <td>${reg.produto.toUpperCase()}</td>
-                    <td class="${corMov}">${textoMovimento}</td>
+                    <td class="${corMov}">${textoMov}</td>
                     <td><b>${sinal}${reg.qtd}</b></td>
-                    <td><button class="btn-apagar" onclick="apagarRegisto(${reg.id})">Apagar e Desfazer</button></td>
+                    <td><button class="btn-apagar" onclick="apagarRegisto(${reg.id})">Anular</button></td>
                 </tr>`;
             });
             atualizarTabelaUsuarios();
+        } else {
+            // VISÃO DO FUNCIONÁRIO / VENDEDOR
+            let minhasVendas = vendas.filter(v => v.usuario === usuarioAtual.nome);
+            let meuTotal = minhasVendas.reduce((acc, curr) => acc + (curr.valorAfetado || 0), 0);
+
+            document.getElementById('vendedorTotalValor').innerText = formatarMT(meuTotal);
+            document.getElementById('vendedorQtdVendas').innerText = minhasVendas.length;
+
+            let corpoMinhas = document.getElementById('corpoTabelaMinhasVendas');
+            corpoMinhas.innerHTML = '';
+            [...minhasVendas].reverse().forEach(v => {
+                corpoMinhas.innerHTML += `<tr>
+                    <td>${v.data}</td>
+                    <td>${v.produto.toUpperCase()}</td>
+                    <td>${v.qtd}</td>
+                    <td><b>${formatarMT(v.valorAfetado)}</b></td>
+                    <td>${v.pagamento || 'Numerário'}</td>
+                </tr>`;
+            });
         }
     }
 
@@ -498,22 +638,28 @@
         if (!stock[nomeProduto]) stock[nomeProduto] = { qtd: 0, preco_total: 0 };
 
         if (tipoMovimento === 'entrada') {
-            if (precoInformado <= 0) { alert("Insira o preço da compra."); return; }
+            if (precoInformado <= 0) { alert("Informe o preço do produto."); return; }
             valorMovimentado = (quantidade * precoInformado);
             stock[nomeProduto].qtd += quantidade;
             stock[nomeProduto].preco_total += valorMovimentado;
         } 
+        else if (tipoMovimento === 'saida_cliente') {
+            if (stock[nomeProduto].qtd >= quantidade) {
+                valorMovimentado = precoInformado > 0 ? precoInformado : (quantidade * (stock[nomeProduto].preco_total / stock[nomeProduto].qtd));
+                stock[nomeProduto].qtd -= quantidade;
+                stock[nomeProduto].preco_total -= valorMovimentado;
+            } else { alert('Stock insuficiente!'); return; }
+        }
         else if (tipoMovimento.startsWith('saida')) {
             if (stock[nomeProduto].qtd >= quantidade) {
                 let precoMedio = stock[nomeProduto].preco_total / stock[nomeProduto].qtd;
                 valorMovimentado = (quantidade * precoMedio);
                 stock[nomeProduto].qtd -= quantidade;
                 stock[nomeProduto].preco_total -= valorMovimentado;
-                if (stock[nomeProduto].qtd < 0.01) { stock[nomeProduto].qtd = 0; stock[nomeProduto].preco_total = 0; }
-            } else {
-                alert('Erro: Stock insuficiente!'); return;
-            }
+            } else { alert('Stock insuficiente!'); return; }
         }
+
+        if (stock[nomeProduto].qtd < 0.01) { stock[nomeProduto].qtd = 0; stock[nomeProduto].preco_total = 0; }
 
         let registoNovo = {
             id: Date.now(),
@@ -525,10 +671,7 @@
             valorAfetado: valorMovimentado
         };
 
-        // Se for venda a cliente, guarda também o método de pagamento
-        if (tipoMovimento === 'saida_cliente') {
-            registoNovo.pagamento = metodoPagamento;
-        }
+        if (tipoMovimento === 'saida_cliente') registoNovo.pagamento = metodoPagamento;
 
         historico.push(registoNovo);
 
@@ -541,7 +684,7 @@
     });
 
     window.apagarRegisto = async function(id) {
-        if (!confirm("Anular este registo e atualizar o stock na nuvem?")) return;
+        if (!confirm("Anular este registo e reajustar o stock?")) return;
 
         let index = historico.findIndex(h => h.id === id);
         if (index === -1) return;
@@ -557,15 +700,11 @@
             stock[reg.produto].preco_total += reg.valorAfetado;
         }
 
-        if (stock[reg.produto].qtd < 0.01) {
-            stock[reg.produto].qtd = 0;
-            stock[reg.produto].preco_total = 0;
-        }
+        if (stock[reg.produto].qtd < 0.01) { stock[reg.produto].qtd = 0; stock[reg.produto].preco_total = 0; }
 
         historico.splice(index, 1);
         await setDoc(doc(db, "sistema", "stock"), stock);
         await setDoc(doc(db, "sistema", "historico"), { lista: historico });
-        alert("Registo anulado com sucesso!");
     };
 
     verificarMovimento();
