@@ -4,33 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Stock - Restaurante</title>
-    
-    <!-- Firebase SDK (Versão Modular via CDN) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, setDoc, doc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        // Configuração do Firebase fornecida
-        const firebaseConfig = {
-            apiKey: "AIzaSyD-o0URCIdhrv7j_ftbTQ5ZlHzGCrw0QL4",
-            authDomain: "gestao-restaurante-a74e4.firebaseapp.com",
-            projectId: "gestao-restaurante-a74e4",
-            storageBucket: "gestao-restaurante-a74e4.firebasestorage.app",
-            messagingSenderId: "882707684467",
-            appId: "1:882707684467:web:8c3197794b2c1ba52e1e06"
-        };
-
-        // Inicializar Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // Disponibilizar variáveis globalmente para as funções do sistema
-        window.db = db;
-        window.colRef = (nomeColecao) => collection(db, nomeColecao);
-        
-        // Iniciar carregamento de dados em tempo real
-        window.iniciarEscutaFirebase();
-    </script>
 
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
@@ -73,7 +46,7 @@
         /* Controlo de Ecrãs */
         #telaSistema { display: none; }
         #painelAdminSection { display: none; }
-        #loadingNuvem { text-align: center; font-weight: bold; color: #007bff; padding: 10px; }
+        #loadingNuvem { text-align: center; font-weight: bold; color: #007bff; padding: 20px; font-size: 1.1em; }
     </style>
 </head>
 <body>
@@ -203,8 +176,22 @@
     </div>
 </div>
 
+<!-- LÓGICA DO SISTEMA E LIGAÇÃO FIREBASE -->
 <script type="module">
-    import { doc, getDoc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyD-o0URCIdhrv7j_ftbTQ5ZlHzGCrw0QL4",
+        authDomain: "gestao-restaurante-a74e4.firebaseapp.com",
+        projectId: "gestao-restaurante-a74e4",
+        storageBucket: "gestao-restaurante-a74e4.firebasestorage.app",
+        messagingSenderId: "882707684467",
+        appId: "1:882707684467:web:8c3197794b2c1ba52e1e06"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
     let usuarios = {};
     let stock = {};
@@ -212,44 +199,41 @@
     let usuarioAtual = null;
     let temporizadorInatividade;
 
-    // --- SINCRONIZAÇÃO EM TEMPO REAL COM FIREBASE ---
-    window.iniciarEscutaFirebase = function() {
-        // Escutar Utilizadores
-        onSnapshot(doc(window.db, "sistema", "usuarios"), async (docSnap) => {
-            if (docSnap.exists()) {
-                usuarios = docSnap.data();
-            } else {
-                usuarios = { "admin": { senha: "123", tipo: "admin" } };
-                await setDoc(doc(window.db, "sistema", "usuarios"), usuarios);
-            }
-            verificarEstadoInicial();
-        });
+    // Iniciar escuta em tempo real do Firestore
+    onSnapshot(doc(db, "sistema", "usuarios"), async (docSnap) => {
+        if (docSnap.exists()) {
+            usuarios = docSnap.data();
+        } else {
+            usuarios = { "admin": { senha: "123", tipo: "admin" } };
+            await setDoc(doc(db, "sistema", "usuarios"), usuarios);
+        }
+        verificarEstadoInicial();
+    });
 
-        // Escutar Stock
-        onSnapshot(doc(window.db, "sistema", "stock"), async (docSnap) => {
-            if (docSnap.exists()) {
-                stock = docSnap.data();
-            } else {
-                stock = {};
-                await setDoc(doc(window.db, "sistema", "stock"), stock);
-            }
-            if(usuarioAtual) atualizarTabelas();
-        });
+    onSnapshot(doc(db, "sistema", "stock"), async (docSnap) => {
+        if (docSnap.exists()) {
+            stock = docSnap.data();
+        } else {
+            stock = {};
+            await setDoc(doc(db, "sistema", "stock"), stock);
+        }
+        if(usuarioAtual) atualizarTabelas();
+    });
 
-        // Escutar Histórico
-        onSnapshot(doc(window.db, "sistema", "historico"), async (docSnap) => {
-            if (docSnap.exists()) {
-                historico = docSnap.data().lista || [];
-            } else {
-                historico = [];
-                await setDoc(doc(window.db, "sistema", "historico"), { lista: [] });
-            }
-            if(usuarioAtual) atualizarTabelas();
-        });
-    };
+    onSnapshot(doc(db, "sistema", "historico"), async (docSnap) => {
+        if (docSnap.exists()) {
+            historico = docSnap.data().lista || [];
+        } else {
+            historico = [];
+            await setDoc(doc(db, "sistema", "historico"), { lista: [] });
+        }
+        if(usuarioAtual) atualizarTabelas();
+    });
 
     function verificarEstadoInicial() {
-        document.getElementById('loadingNuvem').style.display = 'none';
+        let elementoLoading = document.getElementById('loadingNuvem');
+        if (elementoLoading) elementoLoading.style.display = 'none';
+        
         if (!usuarioAtual) {
             document.getElementById('telaLogin').style.display = 'block';
         }
@@ -326,7 +310,7 @@
             return;
         }
         usuarios[usuarioAtual.nome].senha = novaSenha;
-        await setDoc(doc(window.db, "sistema", "usuarios"), usuarios);
+        await setDoc(doc(db, "sistema", "usuarios"), usuarios);
         alert("Palavra-passe alterada com sucesso!");
         document.getElementById('inputNovaSenha').value = '';
     };
@@ -340,7 +324,7 @@
         if (usuarios[novoUser]) { alert("Este utilizador já existe!"); return; }
 
         usuarios[novoUser] = { senha: novaPass, tipo: "funcionario" };
-        await setDoc(doc(window.db, "sistema", "usuarios"), usuarios);
+        await setDoc(doc(db, "sistema", "usuarios"), usuarios);
         alert("Funcionário criado com sucesso!");
         
         document.getElementById('novoUser').value = '';
@@ -351,7 +335,7 @@
         if (nomeParaEliminar === 'admin') { alert("O admin principal não pode ser eliminado."); return; }
         if (confirm("Tem certeza que quer eliminar " + nomeParaEliminar.toUpperCase() + "?")) {
             delete usuarios[nomeParaEliminar];
-            await setDoc(doc(window.db, "sistema", "usuarios"), usuarios);
+            await setDoc(doc(db, "sistema", "usuarios"), usuarios);
             alert("Conta eliminada.");
         }
     };
@@ -406,7 +390,7 @@
     window.apagarProdutoStock = async function(nomeProduto) {
         if (confirm(`Apagar o produto "${nomeProduto.toUpperCase()}" definitivamente?`)) {
             delete stock[nomeProduto];
-            await setDoc(doc(window.db, "sistema", "stock"), stock);
+            await setDoc(doc(db, "sistema", "stock"), stock);
             alert("Produto apagado!");
         }
     };
@@ -500,8 +484,8 @@
             valorAfetado: valorMovimentado
         });
 
-        await setDoc(doc(window.db, "sistema", "stock"), stock);
-        await setDoc(doc(window.db, "sistema", "historico"), { lista: historico });
+        await setDoc(doc(db, "sistema", "stock"), stock);
+        await setDoc(doc(db, "sistema", "historico"), { lista: historico });
 
         document.getElementById('formStock').reset();
         verificarMovimento();
@@ -531,8 +515,8 @@
         }
 
         historico.splice(index, 1);
-        await setDoc(doc(window.db, "sistema", "stock"), stock);
-        await setDoc(doc(window.db, "sistema", "historico"), { lista: historico });
+        await setDoc(doc(db, "sistema", "stock"), stock);
+        await setDoc(doc(db, "sistema", "historico"), { lista: historico });
         alert("Registo anulado com sucesso!");
     };
 
