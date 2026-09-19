@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Stock - Restaurante</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h2, h3 { text-align: center; color: #333; }
+        .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
+        .form-group { flex: 1; margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555;}
+        input, select, button { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        
+        /* Botões */
+        button { background-color: #007bff; color: white; font-size: 16px; font-weight: bold; cursor: pointer; border: none; margin-top: 10px; }
+        button:hover { background-color: #0056b3; }
+        .btn-saida { background-color: #dc3545; }
+        .btn-saida:hover { background-color: #c82333; }
+        .btn-logout { background-color: #6c757d; width: auto; padding: 5px 15px; font-size: 14px; margin-top: 0;}
+        .btn-acao-pequeno { background-color: #28a745; width: auto; padding: 5px 15px; font-size: 14px; margin-top: 0; }
+        .btn-apagar { background-color: #dc3545; color: white; font-size: 12px; padding: 5px 10px; margin: 0; width: auto; }
+        .btn-backup { background-color: #17a2b8; margin-top: 15px; }
+        .btn-backup:hover { background-color: #138496; }
+        
+        /* Tabelas */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9em; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; color: #333; }
+        .alerta { color: red; font-weight: bold; }
+        .mov-entrada { color: #28a745; font-weight: bold; }
+        .mov-saida { color: #dc3545; font-weight: bold; }
+        
+        /* Painéis e Layout */
+        .painel-financeiro, .painel-admin { background-color: #e9ecef; padding: 15px; border-radius: 5px; margin-top: 20px; }
+        .painel-financeiro { text-align: center; font-size: 1.2em; font-weight: bold; }
+        .valor-mt { color: #28a745; }
+        .seccao-titulo { margin-top: 40px; border-bottom: 2px solid #ccc; padding-bottom: 5px; }
+        
+        /* Cabeçalho do Utilizador */
+        .header-usuario { display: flex; justify-content: space-between; align-items: center; background: #e2e8f0; padding: 10px 15px; border-radius: 5px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;}
+        .area-trocar-senha { display: flex; gap: 5px; }
+        
+        /* Controlo de Ecrãs */
+        #telaSistema { display: none; }
+        #painelAdminSection { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- ECRÃ DE LOGIN -->
+    <div id="telaLogin">
+        <h2>Entrar no Sistema</h2>
+        <div class="form-group">
+            <label>Utilizador</label>
+            <input type="text" id="loginUser" placeholder="Nome de utilizador" autocomplete="off">
+        </div>
+        <div class="form-group">
+            <label>Palavra-passe</label>
+            <input type="password" id="loginPass" placeholder="Sua palavra-passe">
+        </div>
+        <button onclick="fazerLogin()">Entrar</button>
+    </div>
+
+    <!-- ECRÃ DO SISTEMA -->
+    <div id="telaSistema">
+        
+        <!-- Cabeçalho com Opções de Conta -->
+        <div class="header-usuario">
+            <div>
+                <strong>Logado como: <span id="nomeUsuarioLogado" style="color: #007bff; text-transform: uppercase;"></span></strong>
+            </div>
+            <div class="area-trocar-senha">
+                <input type="password" id="inputNovaSenha" placeholder="Nova palavra-passe" style="width: 150px; padding: 5px;">
+                <button class="btn-acao-pequeno" onclick="mudarMinhaSenha()">Alterar Senha</button>
+                <button class="btn-logout" onclick="fazerLogout()">Sair da Conta</button>
+            </div>
+        </div>
+        
+        <h2 class="seccao-titulo">Registar Movimento</h2>
+        <form id="formStock">
+            <div class="form-group">
+                <label for="produto">Nome do Produto</label>
+                <input type="text" id="produto" required autocomplete="off" placeholder="Ex: Saco de Arroz 25kg">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="movimento">Movimento</label>
+                    <select id="movimento" onchange="verificarMovimento()">
+                        <option value="entrada">Entrada de Fornecedor (+)</option>
+                        <option value="saida_cozinha">Saída para Cozinha (-)</option>
+                        <option value="saida_cliente">Saída para Cliente (-)</option>
+                        <option value="saida_perda">Saída (Perda/Quebra) (-)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="quantidade">Quantidade</label>
+                    <input type="number" id="quantidade" required min="0.1" step="0.1" placeholder="Ex: 5">
+                </div>
+                <div class="form-group" id="grupoPreco">
+                    <label for="preco">Preço Unitário (MT)</label>
+                    <input type="number" id="preco" min="0" step="0.5" placeholder="Ex: 1500">
+                </div>
+            </div>
+            <button type="submit" id="btnRegistar">Registar Movimento</button>
+        </form>
+
+        <h3 class="seccao-titulo">Stock Disponível na Despensa</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Qtd</th>
+                    <th class="col-fin">Custo Médio</th>
+                    <th class="col-fin">Valor Total</th>
+                    <th class="col-admin">Ação</th>
+                </tr>
+            </thead>
+            <tbody id="corpoTabelaStock"></tbody>
+        </table>
+
+        <!-- PAINEL EXCLUSIVO DO ADMINISTRADOR -->
+        <div id="painelAdminSection">
+            <div class="painel-financeiro">
+                Valor Total de todo o Armazém: <span id="valorTotalGeral" class="valor-mt">0.00 MT</span>
+            </div>
+            
+            <button class="btn-backup" onclick="fazerBackup()">💾 Descarregar Cópia de Segurança (Backup)</button>
+            
+            <h3 class="seccao-titulo">Histórico Completo de Movimentos</h3>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data & Hora</th>
+                            <th>Funcionário</th>
+                            <th>Produto</th>
+                            <th>Tipo</th>
+                            <th>Qtd</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoTabelaHistorico"></tbody>
+                </table>
+            </div>
+
+            <!-- GESTÃO DE UTILIZADORES -->
+            <div class="painel-admin" style="margin-top: 40px;">
+                <h3>Gestão de Utilizadores e Funcionários</h3>
+                
+                <div class="form-row" style="background: white; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                    <input type="text" id="novoUser" placeholder="Nome do novo funcionário" autocomplete="off">
+                    <input type="password" id="novaPass" placeholder="Palavra-passe">
+                    <button onclick="criarUsuario()" style="margin-top: 0;">Criar Conta</button>
+                </div>
+
+                <h4>Contas Existentes</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome de Utilizador</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoTabelaUsuarios"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // Configurações Base de Utilizadores
+    let usuarios = JSON.parse(localStorage.getItem('usuariosRestaurante'));
+    if (!usuarios) {
+        usuarios = { "admin": { senha: "123", tipo: "admin" } };
+        localStorage.setItem('usuariosRestaurante', JSON.stringify(usuarios));
+    }
+
+    let stock = JSON.parse(localStorage.getItem('stockFinanceiroRestaurante')) || {};
+    let historico = JSON.parse(localStorage.getItem('historicoStockRestaurante')) || [];
+    let usuarioAtual = null;
+    let temporizadorInatividade;
+
+    // --- SEGURANÇA: LOGOUT AUTOMÁTICO ---
+    function resetarTemporizador() {
+        clearTimeout(temporizadorInatividade);
+        // Apenas inicia a contagem se houver alguém logado
+        if (usuarioAtual) {
+            // Define o limite para 5 minutos (300.000 milissegundos)
+            temporizadorInatividade = setTimeout(logoutPorInatividade, 300000);
+        }
+    }
+
+    function logoutPorInatividade() {
+        if (usuarioAtual) {
+            alert("Sessão terminada automaticamente por inatividade (5 minutos) para sua segurança.");
+            fazerLogout();
+        }
+    }
+
+    // Deteta movimento e cliques para reiniciar o temporizador
+    window.onload = resetarTemporizador;
+    document.onmousemove = resetarTemporizador;
+    document.onkeypress = resetarTemporizador;
+    document.ontouchstart = resetarTemporizador; // Para ecrãs táteis
+
+    // --- SEGURANÇA: FAZER BACKUP ---
+    function fazerBackup() {
+        let dadosParaGuardar = {
+            usuarios: JSON.parse(localStorage.getItem('usuariosRestaurante')),
+            stock: JSON.parse(localStorage.getItem('stockFinanceiroRestaurante')),
+            historico: JSON.parse(localStorage.getItem('historicoStockRestaurante'))
+        };
+        
+        let textoDados = JSON.stringify(dadosParaGuardar, null, 2);
+        let blob = new Blob([textoDados], { type: "application/json" });
+        let link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        
+        let dataHoje = new Date().toISOString().split('T')[0]; // Pega a data no formato AAAA-MM-DD
+        link.download = "backup_restaurante_" + dataHoje + ".json";
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        alert("Cópia de segurança descarregada com sucesso! Guarde este ficheiro num local seguro.");
+    }
+
+    // --- FUNÇÕES DE CONTA E LOGIN ---
+    function fazerLogin() {
+        let user = document.getElementById('loginUser').value.trim().toLowerCase();
+        let pass = document.getElementById('loginPass').value;
+
+        if (usuarios[user] && usuarios[user].senha === pass) {
+            usuarioAtual = { nome: user, tipo: usuarios[user].tipo };
+            document.getElementById('nomeUsuarioLogado').innerText = user;
+            
+            document.getElementById('telaLogin').style.display = 'none';
+            document.getElementById('telaSistema').style.display = 'block';
+            
+            configurarVisaoBaseadoNoPerfil();
+            atualizarTabelas();
+            resetarTemporizador(); // Inicia o relógio de segurança assim que entra
+        } else {
+            alert("Utilizador ou Palavra-passe incorretos!");
+        }
+    }
+
+    function fazerLogout() {
+        usuarioAtual = null;
+        clearTimeout(temporizadorInatividade);
+        document.getElementById('telaSistema').style.display = 'none';
+        document.getElementById('telaLogin').style.display = 'block';
+        document.getElementById('loginUser').value = '';
+        document.getElementById('loginPass').value = '';
+        document.getElementById('inputNovaSenha').value = '';
+    }
+
+    function mudarMinhaSenha() {
+        let novaSenha = document.getElementById('inputNovaSenha').value;
+        if (novaSenha.trim() === "") {
+            alert("Por favor, escreva uma nova palavra-passe na caixa antes de clicar em alterar.");
+            return;
+        }
+        
+        usuarios[usuarioAtual.nome].senha = novaSenha;
+        localStorage.setItem('usuariosRestaurante', JSON.stringify(usuarios));
+        alert("A sua palavra-passe foi alterada com sucesso! Na próxima vez que entrar, use a nova senha.");
+        document.getElementById('inputNovaSenha').value = '';
+    }
+
+    // --- FUNÇÕES DE GESTÃO DE FUNCIONÁRIOS (ADMIN) ---
+    function criarUsuario() {
+        let novoUser = document.getElementById('novoUser').value.trim().toLowerCase();
+        let novaPass = document.getElementById('novaPass').value;
+
+        if (novoUser === "" || novaPass === "") { alert("Preencha o nome e a palavra-passe."); return; }
+        if (usuarios[novoUser]) { alert("Este utilizador já existe!"); return; }
+
+        usuarios[novoUser] = { senha: novaPass, tipo: "funcionario" };
+        localStorage.setItem('usuariosRestaurante', JSON.stringify(usuarios));
+        alert("Funcionário " + novoUser.toUpperCase() + " criado com sucesso!");
+        
+        document.getElementById('novoUser').value = '';
+        document.getElementById('novaPass').value = '';
+        atualizarTabelaUsuarios();
+    }
+
+    function eliminarUsuario(nomeParaEliminar) {
+        if (nomeParaEliminar === 'admin') {
+            alert("A conta do Administrador principal não pode ser eliminada por segurança.");
+            return;
+        }
+        
+        if (confirm("Tem a certeza absoluta que quer eliminar o funcionário " + nomeParaEliminar.toUpperCase() + "? Ele perderá o acesso ao sistema.")) {
+            delete usuarios[nomeParaEliminar];
+            localStorage.setItem('usuariosRestaurante', JSON.stringify(usuarios));
+            alert("Conta eliminada com sucesso.");
+            atualizarTabelaUsuarios();
+        }
+    }
+
+    function atualizarTabelaUsuarios() {
+        let corpoUsers = document.getElementById('corpoTabelaUsuarios');
+        if (!corpoUsers) return;
+        corpoUsers.innerHTML = '';
+        
+        for (let user in usuarios) {
+            if (user !== 'admin') {
+                corpoUsers.innerHTML += `<tr>
+                    <td style="text-transform: capitalize;"><b>${user}</b></td>
+                    <td><button class="btn-apagar" onclick="eliminarUsuario('${user}')">Eliminar Conta</button></td>
+                </tr>`;
+            }
+        }
+    }
+
+    // --- VISUAIS E LÓGICA DE STOCK ---
+    function configurarVisaoBaseadoNoPerfil() {
+        let isAdmin = usuarioAtual.tipo === 'admin';
+        document.getElementById('painelAdminSection').style.display = isAdmin ? 'block' : 'none';
+        
+        let colunasFin = document.getElementsByClassName('col-fin');
+        for (let i = 0; i < colunasFin.length; i++) {
+            colunasFin[i].style.display = isAdmin ? 'table-cell' : 'none';
+        }
+
+        let colunasAdmin = document.getElementsByClassName('col-admin');
+        for (let i = 0; i < colunasAdmin.length; i++) {
+            colunasAdmin[i].style.display = isAdmin ? 'table-cell' : 'none';
+        }
+    }
+
+    function verificarMovimento() {
+        let mov = document.getElementById('movimento').value;
+        let grupoPreco = document.getElementById('grupoPreco');
+        let btn = document.getElementById('btnRegistar');
+        
+        if (mov.startsWith('saida')) {
+            grupoPreco.style.display = 'none';
+            btn.className = 'btn-saida';
+            
+            if(mov === 'saida_cozinha') btn.innerText = 'Registar Saída para Cozinha';
+            else if(mov === 'saida_cliente') btn.innerText = 'Registar Saída para Cliente';
+            else if(mov === 'saida_perda') btn.innerText = 'Registar Perda/Quebra';
+            
+        } else {
+            grupoPreco.style.display = 'block';
+            btn.className = '';
+            btn.innerText = 'Registar Entrada de Fornecedor';
+        }
+    }
+
+    function formatarMT(valor) {
+        return parseFloat(valor).toLocaleString('pt-MZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' MT';
+    }
+
+    function apagarProdutoStock(nomeProduto) {
+        if (confirm(`Tem a certeza que quer APAGAR o produto "${nomeProduto.toUpperCase()}" de forma definitiva? Não poderá desfazer esta ação.`)) {
+            delete stock[nomeProduto];
+            salvarDados();
+            alert("Produto apagado com sucesso!");
+        }
+    }
+
+    function atualizarTabelas() {
+        let isAdmin = usuarioAtual.tipo === 'admin';
+        
+        let corpoStock = document.getElementById('corpoTabelaStock');
+        corpoStock.innerHTML = '';
+        let totalGeralArmazem = 0;
+
+        for (let produto in stock) {
+            let dados = stock[produto];
+            
+            let precoMedioUnitario = 0;
+            if (dados.qtd > 0) {
+                precoMedioUnitario = dados.preco_total / dados.qtd;
+            }
+            totalGeralArmazem += dados.preco_total;
+
+            let colunasFinHtml = isAdmin ? 
+                `<td class="col-fin">${formatarMT(precoMedioUnitario)}</td>
+                 <td class="col-fin"><strong>${formatarMT(dados.preco_total)}</strong></td>
+                 <td class="col-admin"><button class="btn-apagar" onclick="apagarProdutoStock('${produto}')">Apagar Produto</button></td>` : '';
+
+            corpoStock.innerHTML += `<tr>
+                <td>${produto.toUpperCase()}</td>
+                <td class="${dados.qtd <= 5 ? 'alerta' : ''}">${dados.qtd}</td>
+                ${colunasFinHtml}
+            </tr>`;
+        }
+        
+        if (isAdmin) {
+            document.getElementById('valorTotalGeral').innerText = formatarMT(totalGeralArmazem);
+            
+            let corpoHistorico = document.getElementById('corpoTabelaHistorico');
+            corpoHistorico.innerHTML = '';
+            let historicoInvertido = [...historico].reverse(); 
+            
+            historicoInvertido.forEach(reg => {
+                let corMov = reg.movimento === 'entrada' ? 'mov-entrada' : 'mov-saida';
+                let sinal = reg.movimento === 'entrada' ? '+' : '-';
+                
+                let textoMovimento = "SAÍDA";
+                if(reg.movimento === 'entrada') textoMovimento = "ENTRADA";
+                else if(reg.movimento === 'saida_cozinha') textoMovimento = "SAÍDA (COZINHA)";
+                else if(reg.movimento === 'saida_cliente') textoMovimento = "SAÍDA (CLIENTE)";
+                else if(reg.movimento === 'saida_perda') textoMovimento = "PERDA/QUEBRA";
+                
+                corpoHistorico.innerHTML += `<tr>
+                    <td>${reg.data}</td>
+                    <td style="text-transform: capitalize;">${reg.usuario}</td>
+                    <td>${reg.produto.toUpperCase()}</td>
+                    <td class="${corMov}">${textoMovimento}</td>
+                    <td><b>${sinal}${reg.qtd}</b></td>
+                    <td><button class="btn-apagar" onclick="apagarRegisto(${reg.id})">Apagar e Desfazer</button></td>
+                </tr>`;
+            });
+
+            atualizarTabelaUsuarios();
+        }
+    }
+
+    document.getElementById('formStock').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        let nomeProduto = document.getElementById('produto').value.trim().toLowerCase();
+        let tipoMovimento = document.getElementById('movimento').value;
+        let quantidade = parseFloat(document.getElementById('quantidade').value);
+        let precoInformado = parseFloat(document.getElementById('preco').value) || 0;
+        let valorMovimentado = 0;
+
+        if (!stock[nomeProduto]) stock[nomeProduto] = { qtd: 0, preco_total: 0 };
+
+        if (tipoMovimento === 'entrada') {
+            if (precoInformado <= 0) { alert("Insira o preço da compra em Meticais."); return; }
+            valorMovimentado = (quantidade * precoInformado);
+            stock[nomeProduto].qtd += quantidade;
+            stock[nomeProduto].preco_total += valorMovimentado;
+        } 
+        else if (tipoMovimento.startsWith('saida')) {
+            if (stock[nomeProduto].qtd >= quantidade) {
+                let precoMedio = stock[nomeProduto].preco_total / stock[nomeProduto].qtd;
+                valorMovimentado = (quantidade * precoMedio);
+                stock[nomeProduto].qtd -= quantidade;
+                stock[nomeProduto].preco_total -= valorMovimentado;
+                
+                if (stock[nomeProduto].qtd < 0.01) { stock[nomeProduto].qtd = 0; stock[nomeProduto].preco_total = 0; }
+            } else {
+                alert('Erro: Stock insuficiente para esta saída!'); return;
+            }
+        }
+
+        let dataHoraAtual = new Date().toLocaleString('pt-MZ');
+        historico.push({
+            id: Date.now(),
+            data: dataHoraAtual,
+            usuario: usuarioAtual.nome,
+            produto: nomeProduto,
+            movimento: tipoMovimento,
+            qtd: quantidade,
+            valorAfetado: valorMovimentado
+        });
+
+        salvarDados();
+        document.getElementById('formStock').reset();
+        verificarMovimento();
+        document.getElementById('produto').focus();
+    });
+
+    function apagarRegisto(id) {
+        if (!confirm("Tem a certeza que quer apagar este registo? As contas do stock serão desfeitas automaticamente.")) return;
+
+        let index = historico.findIndex(h => h.id === id);
+        if (index === -1) return;
+        let reg = historico[index];
+        
+        if (!stock[reg.produto]) stock[reg.produto] = { qtd: 0, preco_total: 0 };
+
+        if (reg.movimento === 'entrada') {
+            stock[reg.produto].qtd -= reg.qtd;
+            stock[reg.produto].preco_total -= reg.valorAfetado;
+        } 
+        else if (reg.movimento.startsWith('saida')) {
+            stock[reg.produto].qtd += reg.qtd;
+            stock[reg.produto].preco_total += reg.valorAfetado;
+        }
+
+        if (stock[reg.produto].qtd < 0.01) {
+            stock[reg.produto].qtd = 0;
+            stock[reg.produto].preco_total = 0;
+        }
+
+        historico.splice(index, 1);
+        salvarDados();
+        alert("Registo anulado e stock atualizado!");
+    }
+
+    function salvarDados() {
+        localStorage.setItem('stockFinanceiroRestaurante', JSON.stringify(stock));
+        localStorage.setItem('historicoStockRestaurante', JSON.stringify(historico));
+        atualizarTabelas();
+    }
+
+    verificarMovimento();
+</script>
+
+</body>
+</html>
