@@ -47,6 +47,16 @@
         #telaSistema { display: none; }
         #painelAdminSection { display: none; }
         #loadingNuvem { text-align: center; font-weight: bold; color: #007bff; padding: 20px; font-size: 1.1em; }
+
+        /* Ajustes Responsivos para Telemóveis */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .container { padding: 10px; }
+            .form-row { flex-direction: column; gap: 0; }
+            .header-usuario { flex-direction: column; align-items: stretch; }
+            .area-trocar-senha { flex-direction: column; }
+            input, select, button { font-size: 16px; }
+        }
     </style>
 </head>
 <body>
@@ -95,7 +105,7 @@
                     <select id="movimento" onchange="verificarMovimento()">
                         <option value="entrada">Entrada de Fornecedor (+)</option>
                         <option value="saida_cozinha">Saída para Cozinha (-)</option>
-                        <option value="saida_cliente">Saída para Cliente (-)</option>
+                        <option value="saida_cliente">Saída para Venda / Cliente (-)</option>
                         <option value="saida_perda">Saída (Perda/Quebra) (-)</option>
                     </select>
                 </div>
@@ -104,26 +114,40 @@
                     <input type="number" id="quantidade" required min="0.1" step="0.1" placeholder="Ex: 5">
                 </div>
                 <div class="form-group" id="grupoPreco">
-                    <label for="preco">Preço Unitário (MT)</label>
+                    <label for="preco">Preço (Custo Unitário ou Valor Total)</label>
                     <input type="number" id="preco" min="0" step="0.5" placeholder="Ex: 1500">
                 </div>
             </div>
+
+            <!-- SEÇÃO DE PAGAMENTO (APARECE APENAS NAS VENDAS A CLIENTES) -->
+            <div class="form-group" id="grupoPagamento" style="display: none; background: #e8f4fd; padding: 12px; border-radius: 5px; border: 1px solid #bbe1fa;">
+                <label for="metodoPagamento" style="color: #0056b3;">Método de Pagamento (Venda)</label>
+                <select id="metodoPagamento">
+                    <option value="Numerário">💵 Numerário (Cash)</option>
+                    <option value="M-Pesa">📱 M-Pesa</option>
+                    <option value="e-Mola">📱 e-Mola</option>
+                    <option value="POS">💳 POS (Cartão)</option>
+                </select>
+            </div>
+
             <button type="submit" id="btnRegistar">Registar Movimento</button>
         </form>
 
         <h3 class="seccao-titulo">Stock Disponível na Despensa</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Produto</th>
-                    <th>Qtd</th>
-                    <th class="col-fin">Custo Médio</th>
-                    <th class="col-fin">Valor Total</th>
-                    <th class="col-admin">Ação</th>
-                </tr>
-            </thead>
-            <tbody id="corpoTabelaStock"></tbody>
-        </table>
+        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Produto</th>
+                        <th>Qtd</th>
+                        <th class="col-fin">Custo Médio</th>
+                        <th class="col-fin">Valor Total</th>
+                        <th class="col-admin">Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabelaStock"></tbody>
+            </table>
+        </div>
 
         <!-- PAINEL EXCLUSIVO DO ADMINISTRADOR -->
         <div id="painelAdminSection">
@@ -134,14 +158,14 @@
             <button class="btn-backup" onclick="fazerBackup()">💾 Descarregar Cópia de Segurança (Backup)</button>
             
             <h3 class="seccao-titulo">Histórico Completo de Movimentos</h3>
-            <div style="overflow-x:auto;">
+            <div style="overflow-x:auto; -webkit-overflow-scrolling: touch;">
                 <table>
                     <thead>
                         <tr>
                             <th>Data & Hora</th>
                             <th>Funcionário</th>
                             <th>Produto</th>
-                            <th>Tipo</th>
+                            <th>Tipo / Pagamento</th>
                             <th>Qtd</th>
                             <th>Ação</th>
                         </tr>
@@ -161,15 +185,17 @@
                 </div>
 
                 <h4>Contas Existentes</h4>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Nome de Utilizador</th>
-                            <th>Ação</th>
-                        </tr>
-                    </thead>
-                    <tbody id="corpoTabelaUsuarios"></tbody>
-                </table>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nome de Utilizador</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="corpoTabelaUsuarios"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -368,13 +394,21 @@
     window.verificarMovimento = function() {
         let mov = document.getElementById('movimento').value;
         let grupoPreco = document.getElementById('grupoPreco');
+        let grupoPagamento = document.getElementById('grupoPagamento');
         let btn = document.getElementById('btnRegistar');
         
+        // Mostrar campo de método de pagamento apenas se for venda a cliente
+        if (mov === 'saida_cliente') {
+            grupoPagamento.style.display = 'block';
+        } else {
+            grupoPagamento.style.display = 'none';
+        }
+
         if (mov.startsWith('saida')) {
             grupoPreco.style.display = 'none';
             btn.className = 'btn-saida';
             if(mov === 'saida_cozinha') btn.innerText = 'Registar Saída para Cozinha';
-            else if(mov === 'saida_cliente') btn.innerText = 'Registar Saída para Cliente';
+            else if(mov === 'saida_cliente') btn.innerText = 'Registar Venda ao Cliente';
             else if(mov === 'saida_perda') btn.innerText = 'Registar Perda/Quebra';
         } else {
             grupoPreco.style.display = 'block';
@@ -429,8 +463,14 @@
             historicoInvertido.forEach(reg => {
                 let corMov = reg.movimento === 'entrada' ? 'mov-entrada' : 'mov-saida';
                 let sinal = reg.movimento === 'entrada' ? '+' : '-';
-                let textoMovimento = reg.movimento === 'entrada' ? "ENTRADA" : reg.movimento.replace('saida_', 'SAÍDA (').toUpperCase() + (reg.movimento.includes('_') ? ')' : '');
-                if(reg.movimento === 'saida_perda') textoMovimento = "PERDA/QUEBRA";
+                
+                let textoMovimento = "ENTRADA";
+                if(reg.movimento === 'saida_cozinha') textoMovimento = "SAÍDA (COZINHA)";
+                else if(reg.movimento === 'saida_cliente') {
+                    let metodo = reg.pagamento ? reg.pagamento : 'Numerário';
+                    textoMovimento = `VENDA CLIENTE <br><small style="color: #007bff; font-weight: bold;">[Pagto: ${metodo}]</small>`;
+                }
+                else if(reg.movimento === 'saida_perda') textoMovimento = "PERDA/QUEBRA";
                 
                 corpoHistorico.innerHTML += `<tr>
                     <td>${reg.data}</td>
@@ -452,6 +492,7 @@
         let tipoMovimento = document.getElementById('movimento').value;
         let quantidade = parseFloat(document.getElementById('quantidade').value);
         let precoInformado = parseFloat(document.getElementById('preco').value) || 0;
+        let metodoPagamento = document.getElementById('metodoPagamento').value;
         let valorMovimentado = 0;
 
         if (!stock[nomeProduto]) stock[nomeProduto] = { qtd: 0, preco_total: 0 };
@@ -474,7 +515,7 @@
             }
         }
 
-        historico.push({
+        let registoNovo = {
             id: Date.now(),
             data: new Date().toLocaleString('pt-MZ'),
             usuario: usuarioAtual.nome,
@@ -482,7 +523,14 @@
             movimento: tipoMovimento,
             qtd: quantidade,
             valorAfetado: valorMovimentado
-        });
+        };
+
+        // Se for venda a cliente, guarda também o método de pagamento
+        if (tipoMovimento === 'saida_cliente') {
+            registoNovo.pagamento = metodoPagamento;
+        }
+
+        historico.push(registoNovo);
 
         await setDoc(doc(db, "sistema", "stock"), stock);
         await setDoc(doc(db, "sistema", "historico"), { lista: historico });
