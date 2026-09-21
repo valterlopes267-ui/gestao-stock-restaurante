@@ -3,306 +3,358 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Stock e Vendas - Restaurante</title>
+    <title>Sistema de Gestão - Restaurante Pro</title>
 
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-        .container { max-width: 950px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        h2, h3, h4 { text-align: center; color: #333; margin-top: 15px; }
-        .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
-        .form-group { flex: 1; margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555;}
-        input, select, button { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        :root {
+            --primary: #007bff;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #fd7e14;
+            --purple: #6f42c1;
+            --dark: #333;
+            --light: #f4f7f6;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--light); margin: 0; padding: 15px; color: #222; }
+        .container { max-width: 1050px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        h2, h3, h4 { margin-top: 10px; color: var(--dark); }
+        
+        .form-row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 180px; margin-bottom: 10px; }
+        label { display: block; margin-bottom: 4px; font-weight: 600; font-size: 0.85em; color: #555; }
+        input, select, button { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
         
         /* Botões */
-        button { background-color: #007bff; color: white; font-size: 16px; font-weight: bold; cursor: pointer; border: none; margin-top: 10px; border-radius: 4px; }
-        button:hover { background-color: #0056b3; }
-        .btn-saida { background-color: #dc3545; }
-        .btn-saida:hover { background-color: #c82333; }
-        .btn-logout { background-color: #6c757d; width: auto; padding: 5px 15px; font-size: 14px; margin-top: 0;}
-        .btn-acao-pequeno { background-color: #28a745; width: auto; padding: 5px 15px; font-size: 14px; margin-top: 0; }
-        .btn-apagar { background-color: #dc3545; color: white; font-size: 12px; padding: 5px 10px; margin: 0; width: auto; }
-        .btn-backup { background-color: #17a2b8; margin-top: 15px; }
-        
-        /* Cartões do Topo (Dashboard) */
-        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin: 20px 0; }
-        .card-stat { background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 5px solid #007bff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .card-stat.verde { border-left-color: #28a745; }
-        .card-stat.laranja { border-left-color: #fd7e14; }
-        .card-stat.roxo { border-left-color: #6f42c1; }
-        .card-stat h4 { margin: 0 0 5px 0; text-align: left; color: #666; font-size: 0.85em; text-transform: uppercase; }
-        .card-stat .valor-card { font-size: 1.3em; font-weight: bold; color: #222; }
-        
-        /* Tabelas */
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9em; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #f8f9fa; color: #333; }
-        .alerta { color: red; font-weight: bold; }
-        .mov-entrada { color: #28a745; font-weight: bold; }
-        .mov-saida { color: #dc3545; font-weight: bold; }
-        
-        /* Painéis */
-        .painel-box { background-color: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #e9ecef; margin-top: 20px; }
-        .painel-financeiro { background-color: #e9ecef; padding: 15px; border-radius: 5px; text-align: center; font-size: 1.1em; font-weight: bold; margin-top: 15px; }
-        .valor-mt { color: #28a745; }
-        .seccao-titulo { margin-top: 35px; border-bottom: 2px solid #ccc; padding-bottom: 5px; text-align: left; }
-        
-        /* Cabeçalho */
-        .header-usuario { display: flex; justify-content: space-between; align-items: center; background: #e2e8f0; padding: 10px 15px; border-radius: 5px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;}
-        .area-trocar-senha { display: flex; gap: 5px; }
-        
-        /* Controlo de Ecrãs */
-        #telaSistema, #painelAdminSection, #painelVendedorSection { display: none; }
-        #loadingNuvem { text-align: center; font-weight: bold; color: #007bff; padding: 20px; font-size: 1.1em; }
+        button { background-color: var(--primary); color: white; font-weight: bold; cursor: pointer; border: none; transition: 0.2s; }
+        button:hover { opacity: 0.9; }
+        .btn-saida { background-color: var(--danger); }
+        .btn-success { background-color: var(--success); }
+        .btn-warning { background-color: var(--warning); color: white; }
+        .btn-dark { background-color: #555; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; width: auto; margin: 0; }
 
-        /* Ajustes para Telemóveis */
+        /* Cabeçalho */
+        .header-usuario { display: flex; justify-content: space-between; align-items: center; background: #e9ecef; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .acoes-header { display: flex; gap: 8px; align-items: center; }
+
+        /* Cartões do Dashboard */
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 15px 0; }
+        .card-stat { background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 5px solid var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
+        .card-stat.verde { border-left-color: var(--success); }
+        .card-stat.laranja { border-left-color: var(--warning); }
+        .card-stat.roxo { border-left-color: var(--purple); }
+        .card-stat h4 { margin: 0 0 5px 0; font-size: 0.8em; text-transform: uppercase; color: #666; }
+        .card-stat .valor-card { font-size: 1.25em; font-weight: bold; }
+
+        /* Tabelas */
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background-color: #f1f3f5; }
+        .alerta { color: var(--danger); font-weight: bold; }
+        .badge { padding: 3px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold; background: #eee; }
+
+        /* Painel Carrinho */
+        .carrinho-box { background: #eef7ff; border: 1px solid #b6e0fe; padding: 15px; border-radius: 8px; margin-top: 15px; }
+
+        /* Modal de Definições */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
+        .modal-content { background: white; max-width: 500px; margin: 10% auto; padding: 20px; border-radius: 8px; position: relative; }
+        .close-modal { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; }
+
+        /* Estilo para Impressão do Recibo */
+        #areaRecibo { display: none; }
+        @media print {
+            body * { visibility: hidden; }
+            #areaRecibo, #areaRecibo * { visibility: visible; }
+            #areaRecibo { display: block; position: absolute; left: 0; top: 0; width: 80mm; font-family: monospace; font-size: 12px; }
+        }
+
         @media (max-width: 768px) {
-            body { padding: 10px; }
-            .container { padding: 10px; }
             .form-row { flex-direction: column; gap: 0; }
             .header-usuario { flex-direction: column; align-items: stretch; }
-            .area-trocar-senha { flex-direction: column; }
-            input, select, button { font-size: 16px; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    
-    <div id="loadingNuvem">A sincronizar com a nuvem...</div>
+    <div id="loadingNuvem" style="text-align:center; padding:20px; font-weight:bold; color:var(--primary);">A sincronizar com a nuvem...</div>
 
     <!-- ECRÃ DE LOGIN -->
     <div id="telaLogin" style="display:none;">
         <h2>Entrar no Sistema</h2>
         <div class="form-group">
             <label>Utilizador</label>
-            <input type="text" id="loginUser" placeholder="Nome de utilizador" autocomplete="off">
+            <input type="text" id="loginUser" placeholder="Nome de utilizador">
         </div>
         <div class="form-group">
             <label>Palavra-passe</label>
-            <input type="password" id="loginPass" placeholder="Sua palavra-passe">
+            <input type="password" id="loginPass" placeholder="Palavra-passe">
         </div>
         <button onclick="fazerLogin()">Entrar</button>
     </div>
 
-    <!-- ECRÃ DO SISTEMA -->
-    <div id="telaSistema">
+    <!-- ECRÃ PRINCIPAL -->
+    <div id="telaSistema" style="display:none;">
         
         <div class="header-usuario">
-            <div>
-                <strong>Logado como: <span id="nomeUsuarioLogado" style="color: #007bff; text-transform: uppercase;"></span></strong>
-            </div>
-            <div class="area-trocar-senha">
-                <input type="password" id="inputNovaSenha" placeholder="Nova palavra-passe" style="width: 150px; padding: 5px;">
-                <button class="btn-acao-pequeno" onclick="mudarMinhaSenha()">Alterar Senha</button>
-                <button class="btn-logout" onclick="fazerLogout()">Sair</button>
+            <div><strong>Sessão Ativa: <span id="nomeUsuarioLogado" style="color:var(--primary); text-transform:uppercase;"></span></strong></div>
+            <div class="acoes-header">
+                <button id="btnDefinicoes" class="btn-warning btn-sm" onclick="abrirModalDefinicoes()">⚙️ Definições</button>
+                <button class="btn-dark btn-sm" onclick="fazerLogout()">Sair</button>
             </div>
         </div>
 
-        <!-- FORMULÁRIO DE MOVIMENTO DE STOCK -->
-        <h2 class="seccao-titulo">Registar Movimento</h2>
-        <form id="formStock">
+        <!-- MÓDULO DE VENDAS / MOVIMENTO -->
+        <h2>Registar Operação / Venda</h2>
+        <div class="form-row">
             <div class="form-group">
-                <label for="produto">Nome do Produto</label>
-                <input type="text" id="produto" required autocomplete="off" placeholder="Ex: Saco de Arroz 25kg">
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="movimento">Movimento</label>
-                    <select id="movimento" onchange="verificarMovimento()">
-                        <option value="entrada">Entrada de Fornecedor (+)</option>
-                        <option value="saida_cozinha">Saída para Cozinha (-)</option>
-                        <option value="saida_cliente">Saída para Venda / Cliente (-)</option>
-                        <option value="saida_perda">Saída (Perda/Quebra) (-)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="quantidade">Quantidade</label>
-                    <input type="number" id="quantidade" required min="0.1" step="0.1" placeholder="Ex: 5">
-                </div>
-                <div class="form-group" id="grupoPreco">
-                    <label for="preco">Preço (Custo Unitário ou Valor de Venda Total)</label>
-                    <input type="number" id="preco" min="0" step="0.5" placeholder="Ex: 1500">
-                </div>
-            </div>
-
-            <!-- SEÇAO DE PAGAMENTO -->
-            <div class="form-group" id="grupoPagamento" style="display: none; background: #e8f4fd; padding: 12px; border-radius: 5px; border: 1px solid #bbe1fa;">
-                <label for="metodoPagamento" style="color: #0056b3;">Método de Pagamento (Venda)</label>
-                <select id="metodoPagamento">
-                    <option value="Numerário">💵 Numerário (Cash)</option>
-                    <option value="M-Pesa">📱 M-Pesa</option>
-                    <option value="e-Mola">📱 e-Mola</option>
-                    <option value="POS">💳 POS (Cartão)</option>
+                <label>Tipo de Operação</label>
+                <select id="tipoOperacao" onchange="alternarModoOperacao()">
+                    <option value="venda">🛒 Venda ao Cliente (Carrinho)</option>
+                    <option value="entrada">📥 Entrada de Stock (Fornecedor)</option>
+                    <option value="saida_cozinha">🍳 Saída para Cozinha</option>
+                    <option value="saida_perda">⚠️ Perda / Quebra / Avaria</option>
                 </select>
             </div>
+        </div>
 
-            <button type="submit" id="btnRegistar">Registar Movimento</button>
+        <!-- FORMULÁRIO DE ENTRADA / SAÍDAS SIMPLES -->
+        <form id="formMovimentoSimples" style="display:none;">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Produto</label>
+                    <input type="text" id="simplesProduto" required placeholder="Nome do produto">
+                </div>
+                <div class="form-group">
+                    <label>Quantidade</label>
+                    <input type="number" id="simplesQtd" step="0.1" required min="0.1">
+                </div>
+                <div class="form-group" id="boxPrecoCusto">
+                    <label>Preço Custo Unitário (MT)</label>
+                    <input type="number" id="simplesPreco" step="0.5" min="0">
+                </div>
+            </div>
+            <button type="submit" class="btn-success">Registar Operação</button>
         </form>
 
-        <!-- VISÃO EXCLUSIVA DO VENDEDOR (FUNCIONÁRIO) -->
-        <div id="painelVendedorSection">
-            <h2 class="seccao-titulo">O Meu Desempenho de Vendas</h2>
-            <div class="cards-grid">
-                <div class="card-stat verde">
-                    <h4>Meu Total Vendido</h4>
-                    <div class="valor-card" id="vendedorTotalValor">0.00 MT</div>
+        <!-- MÓDULO DE CARRINHO DE COMPRAS (VENDAS MULTI-ITEM) -->
+        <div id="moduloCarrinho" class="carrinho-box">
+            <h4>Adicionar Itens ao Carrinho de Venda</h4>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Selecionar Produto</label>
+                    <select id="cartSelectProduto" onchange="preencherPrecoVenda()"></select>
                 </div>
-                <div class="card-stat laranja">
-                    <h4>Minhas Vendas Realizadas</h4>
-                    <div class="valor-card" id="vendedorQtdVendas">0</div>
+                <div class="form-group">
+                    <label>Quantidade</label>
+                    <input type="number" id="cartQtd" value="1" min="0.1" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label>Preço Unitário Venda (MT)</label>
+                    <input type="number" id="cartPrecoUnit" step="0.5">
+                </div>
+                <div class="form-group" style="align-self:flex-end;">
+                    <button type="button" class="btn-success" onclick="adicionarAoCarrinho()">+ Adicionar Item</button>
                 </div>
             </div>
 
-            <h3>Meu Histórico de Vendas</h3>
-            <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <!-- TABELA DO CARRINHO -->
+            <div class="table-responsive">
                 <table>
                     <thead>
-                        <tr>
-                            <th>Data & Hora</th>
-                            <th>Produto</th>
-                            <th>Qtd</th>
-                            <th>Valor Total</th>
-                            <th>Método Pagamento</th>
-                        </tr>
+                        <tr><th>Produto</th><th>Qtd</th><th>Preço Unit.</th><th>Subtotal</th><th>Ação</th></tr>
                     </thead>
-                    <tbody id="corpoTabelaMinhasVendas"></tbody>
+                    <tbody id="corpoCarrinho"></tbody>
                 </table>
+            </div>
+
+            <div class="form-row" style="margin-top:15px; align-items:center;">
+                <div class="form-group">
+                    <label>Método de Pagamento</label>
+                    <select id="cartMetodoPagamento">
+                        <option value="Numerário">💵 Numerário (Espécie)</option>
+                        <option value="M-Pesa">📱 M-Pesa</option>
+                        <option value="e-Mola">📱 e-Mola</option>
+                        <option value="POS">💳 POS (Cartão)</option>
+                    </select>
+                </div>
+                <div class="form-group" style="text-align:right;">
+                    <span style="font-size:1.2em; font-weight:bold;">Total Venda: <span id="cartTotalTexto" style="color:var(--success);">0.00 MT</span></span>
+                </div>
+                <div class="form-group">
+                    <button type="button" class="btn-success" style="font-size:1.1em;" onclick="finalizarVendaCarrinho()">✅ Finalizar & Imprimir</button>
+                </div>
             </div>
         </div>
 
         <!-- PAINEL EXCLUSIVO DO ADMINISTRADOR -->
-        <div id="painelAdminSection">
-            
-            <h2 class="seccao-titulo">Painel Executivo do Administrador</h2>
-            
-            <!-- BLOCO 1: CARTÕES RESUMO -->
+        <div id="painelAdminSection" style="display:none; margin-top:30px;">
+            <hr>
+            <h2>Painel Financeiro & Fecho de Caixa</h2>
+
+            <!-- FILTRO DE DATA -->
+            <div class="form-row" style="background:#f1f3f5; padding:10px; border-radius:6px; align-items:center;">
+                <div class="form-group" style="margin:0;">
+                    <label>Período de Análise:</label>
+                    <select id="filtroDataTipo" onchange="filtrarDadosPorData()">
+                        <option value="hoje">Hoje</option>
+                        <option value="ontem">Ontem</option>
+                        <option value="mes">Este Mês</option>
+                        <option value="todos">Todo o Histórico</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- CARDS DE MÉTRICAS -->
             <div class="cards-grid">
                 <div class="card-stat verde">
-                    <h4>Total Vendido (Geral)</h4>
-                    <div class="valor-card" id="cardTotalVendido">0.00 MT</div>
+                    <h4>Vendas Totais</h4>
+                    <div class="valor-card" id="dashTotalVendas">0.00 MT</div>
                 </div>
                 <div class="card-stat laranja">
-                    <h4>Melhor Vendedor</h4>
-                    <div class="valor-card" id="cardMelhorVendedor">-</div>
+                    <h4>Custo dos Produtos (COGS)</h4>
+                    <div class="valor-card" id="dashCustoVendas">0.00 MT</div>
                 </div>
                 <div class="card-stat roxo">
-                    <h4>Canal Principal</h4>
-                    <div class="valor-card" id="cardCanalPrincipal">-</div>
+                    <h4>Lucro Líquido Real</h4>
+                    <div class="valor-card" id="dashLucroReal">0.00 MT</div>
                 </div>
             </div>
 
-            <!-- BLOCO 2: TABELA DE VALORES POR VENDEDOR -->
-            <h3>Faturamento por Vendedor / Perfil</h3>
-            <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <!-- FECHO DE CAIXA POR CANAL -->
+            <h4>Fecho por Canal de Pagamento</h4>
+            <div class="cards-grid">
+                <div class="card-stat"><h4>💵 Numerário</h4><div class="valor-card" id="fechoNum">0.00 MT</div></div>
+                <div class="card-stat"><h4>📱 M-Pesa</h4><div class="valor-card" id="fechoMpesa">0.00 MT</div></div>
+                <div class="card-stat"><h4>📱 e-Mola</h4><div class="valor-card" id="fechoEmola">0.00 MT</div></div>
+                <div class="card-stat"><h4>💳 POS</h4><div class="valor-card" id="fechoPos">0.00 MT</div></div>
+            </div>
+
+            <h4>Desempenho por Vendedor</h4>
+            <div class="table-responsive">
                 <table>
-                    <thead>
-                        <tr>
-                            <th>Vendedor / Perfil</th>
-                            <th>Nº de Vendas</th>
-                            <th>Valor Total Vendido (MT)</th>
-                            <th>% do Faturamento</th>
-                        </tr>
-                    </thead>
-                    <tbody id="corpoTabelaVendedores"></tbody>
+                    <thead><tr><th>Vendedor</th><th>Vendas</th><th>Total Vendido (MT)</th><th>% Contribuição</th></tr></thead>
+                    <tbody id="corpoVendedores"></tbody>
                 </table>
             </div>
 
-            <!-- BLOCO 3: FECHO DE CAIXA POR MÉTODO DE PAGAMENTO -->
-            <div class="painel-box">
-                <h3 style="margin-top:0;">Fecho de Caixa (Por Método de Pagamento)</h3>
-                <div class="cards-grid" style="margin-bottom:0;">
-                    <div class="card-stat">
-                        <h4>💵 Numerário (Espécie)</h4>
-                        <div class="valor-card" id="fechoNumerario">0.00 MT</div>
-                    </div>
-                    <div class="card-stat">
-                        <h4>📱 M-Pesa</h4>
-                        <div class="valor-card" id="fechoMpesa">0.00 MT</div>
-                    </div>
-                    <div class="card-stat">
-                        <h4>📱 e-Mola</h4>
-                        <div class="valor-card" id="fechoEmola">0.00 MT</div>
-                    </div>
-                    <div class="card-stat">
-                        <h4>💳 POS (Cartão)</h4>
-                        <div class="valor-card" id="fechoPos">0.00 MT</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- AUDITORIA DO STOCK DE ARMAZÉM -->
-            <h3 class="seccao-titulo">Stock Disponível e Valor em Armazém</h3>
-            <div class="painel-financeiro">
-                Valor do Stock na Despensa: <span id="valorTotalGeral" class="valor-mt">0.00 MT</span>
-            </div>
-            
-            <button class="btn-backup" onclick="fazerBackup()">💾 Descarregar Cópia de Segurança (Backup JSON)</button>
-
-            <h3>Histórico Geral de Transações</h3>
-            <div style="overflow-x:auto; -webkit-overflow-scrolling: touch;">
+            <h4>Histórico Geral de Transações</h4>
+            <div class="table-responsive">
                 <table>
-                    <thead>
-                        <tr>
-                            <th>Data & Hora</th>
-                            <th>Funcionário</th>
-                            <th>Produto</th>
-                            <th>Tipo / Pagamento</th>
-                            <th>Qtd</th>
-                            <th>Ação</th>
-                        </tr>
-                    </thead>
-                    <tbody id="corpoTabelaHistorico"></tbody>
+                    <thead><tr><th>Data/Hora</th><th>User</th><th>Detalhes</th><th>Tipo</th><th>Total</th><th>Ação</th></tr></thead>
+                    <tbody id="corpoHistoricoAdmin"></tbody>
                 </table>
             </div>
-
-            <!-- GESTÃO DE UTILIZADORES -->
-            <div class="painel-box" style="margin-top: 30px;">
-                <h3>Gestão de Utilizadores (Perfis da Equipa)</h3>
-                <div class="form-row">
-                    <input type="text" id="novoUser" placeholder="Nome do funcionário" autocomplete="off">
-                    <input type="password" id="novaPass" placeholder="Palavra-passe">
-                    <button onclick="criarUsuario()" style="margin-top: 0;">Criar Conta</button>
-                </div>
-
-                <h4>Contas de Vendedores Registadas</h4>
-                <div style="overflow-x: auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Nome de Utilizador</th>
-                                <th>Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody id="corpoTabelaUsuarios"></tbody>
-                    </table>
-                </div>
-            </div>
-
+            <button class="btn-dark btn-sm" style="margin-top:10px;" onclick="fazerBackup()">💾 Baixar Backup Geral (JSON)</button>
         </div>
 
-        <!-- TABELA DE STOCK (VISÍVEL PARA TODOS) -->
-        <h3 class="seccao-titulo">Lista de Produtos em Stock</h3>
-        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+        <!-- PAINEL EXCLUSIVO DO VENDEDOR -->
+        <div id="painelVendedorSection" style="display:none; margin-top:20px;">
+            <h3>O Meu Resumo do Dia</h3>
+            <div class="cards-grid">
+                <div class="card-stat verde"><h4>Meu Total Vendido</h4><div class="valor-card" id="vendTotalValor">0.00 MT</div></div>
+                <div class="card-stat laranja"><h4>Minhas Vendas</h4><div class="valor-card" id="vendQtd">0</div></div>
+            </div>
+            <h4>Meu Histórico de Vendas</h4>
+            <div class="table-responsive">
+                <table>
+                    <thead><tr><th>Data</th><th>Itens</th><th>Total</th><th>Pagamento</th></tr></thead>
+                    <tbody id="corpoMinhasVendas"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- MÓDULO DE GERENCIAMENTO DE STOCK -->
+        <hr style="margin-top:30px;">
+        <h2>Gestão de Stock na Despensa</h2>
+
+        <div class="form-row" style="align-items:center;">
+            <div class="form-group">
+                <input type="text" id="searchStock" placeholder="🔍 Pesquisar produto..." onkeyup="filtrarTabelaStock()">
+            </div>
+            <div class="form-group">
+                <select id="filterCategoria" onchange="filtrarTabelaStock()">
+                    <option value="">Todas as Categorias</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
                         <th>Produto</th>
-                        <th>Qtd</th>
+                        <th>Categoria</th>
+                        <th>Qtd em Stock</th>
+                        <th>Alerta Min.</th>
                         <th class="col-fin">Custo Médio</th>
-                        <th class="col-fin">Valor Total</th>
-                        <th class="col-admin">Ação</th>
+                        <th class="col-fin">Valor Total Custo</th>
+                        <th class="col-admin">Ações</th>
                     </tr>
                 </thead>
-                <tbody id="corpoTabelaStock"></tbody>
+                <tbody id="corpoStock"></tbody>
             </table>
         </div>
 
     </div>
 </div>
 
-<!-- LÓGICA DO SISTEMA E FIREBASE -->
+<!-- MODAL DE DEFINIÇÕES E GESTÃO DE USUÁRIOS -->
+<div id="modalDefinicoes" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="fecharModalDefinicoes()">&times;</span>
+        <h3>⚙️ Definições do Sistema</h3>
+        
+        <!-- ALTERAR PALAVRA PASSE -->
+        <div style="background:#f8f9fa; padding:12px; border-radius:6px; margin-bottom:15px;">
+            <h4>Alterar Minha Palavra-Passe</h4>
+            <input type="password" id="inputNovaSenha" placeholder="Nova palavra-passe" style="margin-bottom:8px;">
+            <button class="btn-success btn-sm" onclick="mudarMinhaSenha()">Guardar Nova Senha</button>
+        </div>
+
+        <!-- GESTÃO ADMIN (APENAS PARA O PERFIL ADMIN) -->
+        <div id="seccaoGestaoAdmin" style="display:none;">
+            <div style="background:#f8f9fa; padding:12px; border-radius:6px; margin-bottom:15px;">
+                <h4>Renomear Nome da Conta Admin</h4>
+                <input type="text" id="inputNovoNomeAdmin" placeholder="Novo nome de utilizador Admin" style="margin-bottom:8px;">
+                <button class="btn-warning btn-sm" onclick="renomearContaAdmin()">Alterar Nome Admin</button>
+            </div>
+
+            <div style="background:#f8f9fa; padding:12px; border-radius:6px;">
+                <h4>Criar / Gerir Vendedores</h4>
+                <div class="form-group">
+                    <input type="text" id="novoVendedorUser" placeholder="Nome do vendedor" style="margin-bottom:5px;">
+                    <input type="password" id="novoVendedorPass" placeholder="Palavra-passe" style="margin-bottom:5px;">
+                    <button class="btn-primary btn-sm" onclick="criarVendedor()">+ Adicionar Vendedor</button>
+                </div>
+                <h5>Vendedores Registados:</h5>
+                <div id="listaVendedoresModal"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ÁREA DE IMPRESSÃO DE RECIBO -->
+<div id="areaRecibo">
+    <div style="text-align:center;">
+        <h3 style="margin:0;">RESTAURANTE</h3>
+        <p style="margin:2px 0;">Comprovativo de Venda</p>
+        <p id="reciboData" style="margin:2px 0; font-size:10px;"></p>
+    </div>
+    <hr style="border-dash: 1px dashed #000;">
+    <p><b>Atendido por:</b> <span id="reciboVendedor"></span></p>
+    <p><b>Pagamento:</b> <span id="reciboMetodo"></span></p>
+    <hr style="border-dash: 1px dashed #000;">
+    <div id="reciboItens"></div>
+    <hr style="border-dash: 1px dashed #000;">
+    <h4 style="text-align:right; margin:5px 0;">TOTAL: <span id="reciboTotal"></span> MT</h4>
+    <p style="text-align:center; font-size:10px; margin-top:15px;">Obrigado pela preferência!</p>
+</div>
+
+<!-- FIREBASE SDK & LÓGICA DO SISTEMA -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -322,10 +374,10 @@
     let usuarios = {};
     let stock = {};
     let historico = [];
+    let carrinho = [];
     let usuarioAtual = null;
-    let temporizadorInatividade;
 
-    // Sincronização em tempo real do Firestore
+    // Escuta em Tempo Real
     onSnapshot(doc(db, "sistema", "usuarios"), async (docSnap) => {
         if (docSnap.exists()) { usuarios = docSnap.data(); } 
         else {
@@ -336,378 +388,437 @@
     });
 
     onSnapshot(doc(db, "sistema", "stock"), async (docSnap) => {
-        if (docSnap.exists()) stock = docSnap.data();
-        else { stock = {}; await setDoc(doc(db, "sistema", "stock"), stock); }
-        if(usuarioAtual) atualizarTabelas();
+        stock = docSnap.exists() ? docSnap.data() : {};
+        if (usuarioAtual) { atualizarDropdownProdutosCart(); renderizarStock(); }
     });
 
     onSnapshot(doc(db, "sistema", "historico"), async (docSnap) => {
-        if (docSnap.exists()) historico = docSnap.data().lista || [];
-        else { historico = []; await setDoc(doc(db, "sistema", "historico"), { lista: [] }); }
-        if(usuarioAtual) atualizarTabelas();
+        historico = docSnap.exists() ? (docSnap.data().lista || []) : [];
+        if (usuarioAtual) atualizarTabelas();
     });
 
     function verificarEstadoInicial() {
-        let elementoLoading = document.getElementById('loadingNuvem');
-        if (elementoLoading) elementoLoading.style.display = 'none';
+        document.getElementById('loadingNuvem').style.display = 'none';
         if (!usuarioAtual) document.getElementById('telaLogin').style.display = 'block';
-        if (usuarioAtual) atualizarTabelaUsuarios();
     }
 
-    // LOGOUT AUTOMÁTICO
-    function resetarTemporizador() {
-        clearTimeout(temporizadorInatividade);
-        if (usuarioAtual) temporizadorInatividade = setTimeout(logoutPorInatividade, 300000); // 5 min
-    }
-
-    function logoutPorInatividade() {
-        if (usuarioAtual) {
-            alert("Sessão encerrada por inatividade.");
-            fazerLogout();
-        }
-    }
-
-    window.onload = resetarTemporizador;
-    document.onmousemove = resetarTemporizador;
-    document.onkeypress = resetarTemporizador;
-    document.ontouchstart = resetarTemporizador;
-
-    window.fazerBackup = function() {
-        let blob = new Blob([JSON.stringify({ usuarios, stock, historico }, null, 2)], { type: "application/json" });
-        let link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = "backup_restaurante_" + new Date().toISOString().split('T')[0] + ".json";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
+    // LOGIN & LOGOUT
     window.fazerLogin = function() {
-        let user = document.getElementById('loginUser').value.trim().toLowerCase();
-        let pass = document.getElementById('loginPass').value;
+        let u = document.getElementById('loginUser').value.trim().toLowerCase();
+        let p = document.getElementById('loginPass').value;
 
-        if (usuarios[user] && usuarios[user].senha === pass) {
-            usuarioAtual = { nome: user, tipo: usuarios[user].tipo };
-            document.getElementById('nomeUsuarioLogado').innerText = user;
-            
+        if (usuarios[u] && usuarios[u].senha === p) {
+            usuarioAtual = { nome: u, tipo: usuarios[u].tipo };
+            document.getElementById('nomeUsuarioLogado').innerText = u;
             document.getElementById('telaLogin').style.display = 'none';
             document.getElementById('telaSistema').style.display = 'block';
             
-            configurarVisaoBaseadoNoPerfil();
+            configurarPerfil();
+            atualizarDropdownProdutosCart();
             atualizarTabelas();
-            resetarTemporizador();
         } else {
-            alert("Utilizador ou palavra-passe incorretos!");
+            alert("Credenciais inválidas!");
         }
     };
 
     window.fazerLogout = function() {
         usuarioAtual = null;
-        clearTimeout(temporizadorInatividade);
         document.getElementById('telaSistema').style.display = 'none';
         document.getElementById('telaLogin').style.display = 'block';
-        document.getElementById('loginUser').value = '';
-        document.getElementById('loginPass').value = '';
+    };
+
+    function configurarPerfil() {
+        let isAdmin = usuarioAtual.tipo === 'admin';
+        document.getElementById('painelAdminSection').style.display = isAdmin ? 'block' : 'none';
+        document.getElementById('painelVendedorSection').style.display = !isAdmin ? 'block' : 'none';
+        document.getElementById('seccaoGestaoAdmin').style.display = isAdmin ? 'block' : 'none';
+        
+        let colsFin = document.getElementsByClassName('col-fin');
+        for (let el of colsFin) el.style.display = isAdmin ? 'table-cell' : 'none';
+        let colsAdmin = document.getElementsByClassName('col-admin');
+        for (let el of colsAdmin) el.style.display = isAdmin ? 'table-cell' : 'none';
+    }
+
+    // GESTÃO DE DEFINIÇÕES
+    window.abrirModalDefinicoes = function() {
+        document.getElementById('modalDefinicoes').style.display = 'block';
+        if (usuarioAtual.tipo === 'admin') renderizarListaVendedoresModal();
+    };
+    window.fecharModalDefinicoes = function() {
+        document.getElementById('modalDefinicoes').style.display = 'none';
     };
 
     window.mudarMinhaSenha = async function() {
-        let novaSenha = document.getElementById('inputNovaSenha').value;
-        if (!novaSenha.trim()) { alert("Digite a nova palavra-passe."); return; }
-        usuarios[usuarioAtual.nome].senha = novaSenha;
+        let p = document.getElementById('inputNovaSenha').value;
+        if(!p) return alert("Digite a palavra-passe.");
+        usuarios[usuarioAtual.nome].senha = p;
         await setDoc(doc(db, "sistema", "usuarios"), usuarios);
-        alert("Palavra-passe alterada!");
-        document.getElementById('inputNovaSenha').value = '';
+        alert("Palavra-passe atualizada com sucesso!");
+        fecharModalDefinicoes();
     };
 
-    window.criarUsuario = async function() {
-        let novoUser = document.getElementById('novoUser').value.trim().toLowerCase();
-        let novaPass = document.getElementById('novaPass').value;
+    window.renomearContaAdmin = async function() {
+        let novoNome = document.getElementById('inputNovoNomeAdmin').value.trim().toLowerCase();
+        if(!novoNome) return alert("Introduza o novo nome.");
+        if(usuarios[novoNome]) return alert("Este utilizador já existe.");
 
-        if (!novoUser || !novaPass) { alert("Preencha os dados."); return; }
-        if (usuarios[novoUser]) { alert("Utilizador já existe!"); return; }
+        let dadosAntigos = usuarios[usuarioAtual.nome];
+        delete usuarios[usuarioAtual.nome];
+        usuarios[novoNome] = dadosAntigos;
 
-        usuarios[novoUser] = { senha: novaPass, tipo: "funcionario" };
+        usuarioAtual.nome = novoNome;
+        document.getElementById('nomeUsuarioLogado').innerText = novoNome;
         await setDoc(doc(db, "sistema", "usuarios"), usuarios);
-        alert("Vendedor criado com sucesso!");
-        document.getElementById('novoUser').value = '';
-        document.getElementById('novaPass').value = '';
+        alert("Nome da conta Administrador alterado para: " + novoNome);
+        fecharModalDefinicoes();
     };
 
-    window.eliminarUsuario = async function(nomeParaEliminar) {
-        if (nomeParaEliminar === 'admin') return;
-        if (confirm("Eliminar o utilizador " + nomeParaEliminar.toUpperCase() + "?")) {
-            delete usuarios[nomeParaEliminar];
+    window.criarVendedor = async function() {
+        let u = document.getElementById('novoVendedorUser').value.trim().toLowerCase();
+        let p = document.getElementById('novoVendedorPass').value;
+        if(!u || !p) return alert("Preencha todos os campos.");
+        if(usuarios[u]) return alert("Utilizador já existe.");
+
+        usuarios[u] = { senha: p, tipo: "funcionario" };
+        await setDoc(doc(db, "sistema", "usuarios"), usuarios);
+        renderizarListaVendedoresModal();
+        document.getElementById('novoVendedorUser').value = '';
+        document.getElementById('novoVendedorPass').value = '';
+    };
+
+    window.eliminarVendedor = async function(u) {
+        if(confirm("Eliminar conta de " + u + "?")) {
+            delete usuarios[u];
             await setDoc(doc(db, "sistema", "usuarios"), usuarios);
+            renderizarListaVendedoresModal();
         }
     };
 
-    function atualizarTabelaUsuarios() {
-        let corpoUsers = document.getElementById('corpoTabelaUsuarios');
-        if (!corpoUsers) return;
-        corpoUsers.innerHTML = '';
-        for (let user in usuarios) {
-            if (user !== 'admin') {
-                corpoUsers.innerHTML += `<tr>
-                    <td style="text-transform: capitalize;"><b>${user}</b></td>
-                    <td><button class="btn-apagar" onclick="eliminarUsuario('${user}')">Eliminar Conta</button></td>
-                </tr>`;
+    function renderizarListaVendedoresModal() {
+        let div = document.getElementById('listaVendedoresModal');
+        div.innerHTML = '';
+        for(let u in usuarios) {
+            if(usuarios[u].tipo !== 'admin') {
+                div.innerHTML += `<div style="display:flex; justify-content:space-between; margin-top:5px; background:white; padding:5px; border-radius:4px;">
+                    <span><b>${u}</b></span>
+                    <button class="btn-saida btn-sm" onclick="eliminarVendedor('${u}')">Eliminar</button>
+                </div>`;
             }
         }
     }
 
-    function configurarVisaoBaseadoNoPerfil() {
-        let isAdmin = usuarioAtual.tipo === 'admin';
-        document.getElementById('painelAdminSection').style.display = isAdmin ? 'block' : 'none';
-        document.getElementById('painelVendedorSection').style.display = !isAdmin ? 'block' : 'none';
-        
-        let colunasFin = document.getElementsByClassName('col-fin');
-        for (let i = 0; i < colunasFin.length; i++) colunasFin[i].style.display = isAdmin ? 'table-cell' : 'none';
+    // OPERAÇÕES & CARRINHO DE COMPRAS
+    window.alternarModoOperacao = function() {
+        let tipo = document.getElementById('tipoOperacao').value;
+        document.getElementById('moduloCarrinho').style.display = (tipo === 'venda') ? 'block' : 'none';
+        document.getElementById('formMovimentoSimples').style.display = (tipo !== 'venda') ? 'block' : 'none';
+        document.getElementById('boxPrecoCusto').style.display = (tipo === 'entrada') ? 'block' : 'none';
+    };
 
-        let colunasAdmin = document.getElementsByClassName('col-admin');
-        for (let i = 0; i < colunasAdmin.length; i++) colunasAdmin[i].style.display = isAdmin ? 'table-cell' : 'none';
+    function atualizarDropdownProdutosCart() {
+        let sel = document.getElementById('cartSelectProduto');
+        sel.innerHTML = '<option value="">-- Selecionar Produto --</option>';
+        let cats = new Set();
+        for(let p in stock) {
+            sel.innerHTML += `<option value="${p}">${p.toUpperCase()} (Disp: ${stock[p].qtd})</option>`;
+            if(stock[p].categoria) cats.add(stock[p].categoria);
+        }
+        
+        let selCat = document.getElementById('filterCategoria');
+        selCat.innerHTML = '<option value="">Todas as Categorias</option>';
+        cats.forEach(c => selCat.innerHTML += `<option value="${c}">${c}</option>`);
     }
 
-    window.verificarMovimento = function() {
-        let mov = document.getElementById('movimento').value;
-        let grupoPreco = document.getElementById('grupoPreco');
-        let grupoPagamento = document.getElementById('grupoPagamento');
-        let btn = document.getElementById('btnRegistar');
-        
-        grupoPagamento.style.display = (mov === 'saida_cliente') ? 'block' : 'none';
+    window.preencherPrecoVenda = function() {
+        let prod = document.getElementById('cartSelectProduto').value;
+        if(prod && stock[prod] && stock[prod].qtd > 0) {
+            let costoMedio = stock[prod].preco_total / stock[prod].qtd;
+            document.getElementById('cartPrecoUnit').value = (costoMedio * 1.3).toFixed(2); // Estimativa de preço
+        }
+    };
 
-        if (mov.startsWith('saida')) {
-            grupoPreco.style.display = (mov === 'saida_cliente') ? 'block' : 'none';
-            btn.className = 'btn-saida';
-            if(mov === 'saida_cozinha') btn.innerText = 'Registar Saída para Cozinha';
-            else if(mov === 'saida_cliente') btn.innerText = 'Registar Venda ao Cliente';
-            else if(mov === 'saida_perda') btn.innerText = 'Registar Perda/Quebra';
+    window.adicionarAoCarrinho = function() {
+        let prod = document.getElementById('cartSelectProduto').value;
+        let qtd = parseFloat(document.getElementById('cartQtd').value);
+        let precoUnit = parseFloat(document.getElementById('cartPrecoUnit').value);
+
+        if(!prod || !stock[prod]) return alert("Selecione um produto.");
+        if(qtd <= 0 || isNaN(qtd)) return alert("Quantidade inválida.");
+        if(stock[prod].qtd < qtd) return alert("Stock insuficiente!");
+
+        let subtotal = qtd * precoUnit;
+        let custoUnit = stock[prod].qtd > 0 ? (stock[prod].preco_total / stock[prod].qtd) : 0;
+
+        carrinho.push({ produto: prod, qtd, precoUnit, subtotal, custoUnit });
+        renderizarCarrinho();
+    };
+
+    function renderizarCarrinho() {
+        let tbody = document.getElementById('corpoCarrinho');
+        tbody.innerHTML = '';
+        let total = 0;
+        carrinho.forEach((item, idx) => {
+            total += item.subtotal;
+            tbody.innerHTML += `<tr>
+                <td>${item.produto.toUpperCase()}</td>
+                <td>${item.qtd}</td>
+                <td>${item.precoUnit.toFixed(2)} MT</td>
+                <td><b>${item.subtotal.toFixed(2)} MT</b></td>
+                <td><button class="btn-saida btn-sm" onclick="removerItemCarrinho(${idx})">x</button></td>
+            </tr>`;
+        });
+        document.getElementById('cartTotalTexto').innerText = total.toFixed(2) + " MT";
+    }
+
+    window.removerItemCarrinho = function(idx) {
+        carrinho.splice(idx, 1);
+        renderizarCarrinho();
+    };
+
+    window.finalizarVendaCarrinho = async function() {
+        if(carrinho.length === 0) return alert("O carrinho está vazio.");
+
+        let metodo = document.getElementById('cartMetodoPagamento').value;
+        let totalVenda = carrinho.reduce((acc, i) => acc + i.subtotal, 0);
+        let totalCusto = carrinho.reduce((acc, i) => acc + (i.qtd * i.custoUnit), 0);
+
+        // Abater Stock
+        for(let item of carrinho) {
+            stock[item.produto].qtd -= item.qtd;
+            stock[item.produto].preco_total -= (item.qtd * item.custoUnit);
+            if(stock[item.produto].qtd < 0.01) { stock[item.produto].qtd = 0; stock[item.produto].preco_total = 0; }
+        }
+
+        let registo = {
+            id: Date.now(),
+            data: new Date().toLocaleString('pt-MZ'),
+            timestamp: Date.now(),
+            usuario: usuarioAtual.nome,
+            tipo: 'venda',
+            itens: carrinho,
+            totalVenda,
+            totalCusto,
+            metodo
+        };
+
+        historico.push(registo);
+        await setDoc(doc(db, "sistema", "stock"), stock);
+        await setDoc(doc(db, "sistema", "historico"), { lista: historico });
+
+        imprimirTalão(registo);
+        carrinho = [];
+        renderizarCarrinho();
+        alert("Venda realizada com sucesso!");
+    };
+
+    // MOVIMENTOS SIMPLES (ENTRADA / PERDA / COZINHA)
+    document.getElementById('formMovimentoSimples').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        let prod = document.getElementById('simplesProduto').value.trim().toLowerCase();
+        let qtd = parseFloat(document.getElementById('simplesQtd').value);
+        let tipo = document.getElementById('tipoOperacao').value;
+        let precoCusto = parseFloat(document.getElementById('simplesPreco').value) || 0;
+
+        if(!stock[prod]) stock[prod] = { qtd: 0, preco_total: 0, categoria: 'Geral', min_alerta: 5 };
+
+        let totalAfetado = 0;
+        if(tipo === 'entrada') {
+            totalAfetado = qtd * precoCusto;
+            stock[prod].qtd += qtd;
+            stock[prod].preco_total += totalAfetado;
         } else {
-            grupoPreco.style.display = 'block';
-            btn.className = '';
-            btn.innerText = 'Registar Entrada de Fornecedor';
+            if(stock[prod].qtd < qtd) return alert("Stock insuficiente!");
+            let custoMedio = stock[prod].preco_total / stock[prod].qtd;
+            totalAfetado = qtd * custoMedio;
+            stock[prod].qtd -= qtd;
+            stock[prod].preco_total -= totalAfetado;
         }
-    };
 
-    function formatarMT(valor) {
-        return parseFloat(valor || 0).toLocaleString('pt-MZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' MT';
-    }
+        let registo = {
+            id: Date.now(),
+            data: new Date().toLocaleString('pt-MZ'),
+            timestamp: Date.now(),
+            usuario: usuarioAtual.nome,
+            tipo,
+            produto: prod,
+            qtd,
+            totalCusto: totalAfetado
+        };
 
-    window.apagarProdutoStock = async function(nomeProduto) {
-        if (confirm(`Apagar o produto "${nomeProduto.toUpperCase()}"?`)) {
-            delete stock[nomeProduto];
-            await setDoc(doc(db, "sistema", "stock"), stock);
-        }
-    };
+        historico.push(registo);
+        await setDoc(doc(db, "sistema", "stock"), stock);
+        await setDoc(doc(db, "sistema", "historico"), { lista: historico });
+        this.reset();
+        alert("Operação registada!");
+    });
+
+    // CÁLCULOS FINANCEIROS E RELATÓRIOS POR DATA
+    window.filtrarDadosPorData = function() { atualizarTabelas(); };
 
     function atualizarTabelas() {
         if(!usuarioAtual) return;
         let isAdmin = usuarioAtual.tipo === 'admin';
+        let filtroTipo = document.getElementById('filtroDataTipo').value;
 
-        // 1. ATUALIZAR STOCK
-        let corpoStock = document.getElementById('corpoTabelaStock');
-        corpoStock.innerHTML = '';
-        let totalGeralArmazem = 0;
-
-        for (let produto in stock) {
-            let dados = stock[produto];
-            let precoMedioUnitario = dados.qtd > 0 ? dados.preco_total / dados.qtd : 0;
-            totalGeralArmazem += dados.preco_total;
-
-            let colunasFinHtml = isAdmin ? 
-                `<td class="col-fin">${formatarMT(precoMedioUnitario)}</td>
-                 <td class="col-fin"><strong>${formatarMT(dados.preco_total)}</strong></td>
-                 <td class="col-admin"><button class="btn-apagar" onclick="apagarProdutoStock('${produto}')">Apagar</button></td>` : '';
-
-            corpoStock.innerHTML += `<tr>
-                <td>${produto.toUpperCase()}</td>
-                <td class="${dados.qtd <= 5 ? 'alerta' : ''}">${dados.qtd}</td>
-                ${colunasFinHtml}
-            </tr>`;
-        }
-        
-        // 2. PROCESSAR VENDAS & FECHO FINANCEIRO
-        let vendas = historico.filter(h => h.movimento === 'saida_cliente');
-        let totalVendidoGeral = 0;
-        let porVendedor = {};
-        let porMetodo = { 'Numerário': 0, 'M-Pesa': 0, 'e-Mola': 0, 'POS': 0 };
-
-        vendas.forEach(v => {
-            let valor = v.valorAfetado || 0;
-            totalVendidoGeral += valor;
-
-            // Por Vendedor
-            if (!porVendedor[v.usuario]) porVendedor[v.usuario] = { qtd: 0, total: 0 };
-            porVendedor[v.usuario].qtd += 1;
-            porVendedor[v.usuario].total += valor;
-
-            // Por Método
-            let m = v.pagamento || 'Numerário';
-            porMetodo[m] = (porMetodo[m] || 0) + valor;
+        let agora = new Date();
+        let historicoFiltrado = historico.filter(h => {
+            if(filtroTipo === 'todos') return true;
+            let d = new Date(h.timestamp || Date.now());
+            if(filtroTipo === 'hoje') return d.toDateString() === agora.toDateString();
+            if(filtroTipo === 'ontem') {
+                let ont = new Date(); ont.setDate(agora.getDate() - 1);
+                return d.toDateString() === ont.toDateString();
+            }
+            if(filtroTipo === 'mes') return d.getMonth() === agora.getMonth() && d.getFullYear() === agora.getFullYear();
+            return true;
         });
 
-        if (isAdmin) {
-            document.getElementById('valorTotalGeral').innerText = formatarMT(totalGeralArmazem);
-            document.getElementById('cardTotalVendido').innerText = formatarMT(totalVendidoGeral);
+        if(isAdmin) {
+            let totalVendido = 0, totalCustoCOGS = 0;
+            let canais = { 'Numerário': 0, 'M-Pesa': 0, 'e-Mola': 0, 'POS': 0 };
+            let porVendedor = {};
 
-            // Tabela de Vendedores
-            let corpoVendedores = document.getElementById('corpoTabelaVendedores');
-            corpoVendedores.innerHTML = '';
-            
-            let melhorVendedorNome = "-";
-            let maiorValorVendido = -1;
+            historicoFiltrado.forEach(h => {
+                if(h.tipo === 'venda') {
+                    totalVendido += h.totalVenda || 0;
+                    totalCustoCOGS += h.totalCusto || 0;
+                    if(h.metodo) canais[h.metodo] = (canais[h.metodo] || 0) + h.totalVenda;
 
-            for (let user in porVendedor) {
-                let d = porVendedor[user];
-                let perc = totalVendidoGeral > 0 ? ((d.total / totalVendidoGeral) * 100).toFixed(1) : 0;
-                
-                if (d.total > maiorValorVendido) {
-                    maiorValorVendido = d.total;
-                    melhorVendedorNome = user.toUpperCase() + ` (${formatarMT(d.total)})`;
+                    if(!porVendedor[h.usuario]) porVendedor[h.usuario] = { qtd: 0, total: 0 };
+                    porVendedor[h.usuario].qtd += 1;
+                    porVendedor[h.usuario].total += h.totalVenda;
                 }
+            });
 
-                corpoVendedores.innerHTML += `<tr>
-                    <td style="text-transform: capitalize;"><b>${user}</b></td>
-                    <td>${d.qtd}</td>
-                    <td><strong>${formatarMT(d.total)}</strong></td>
-                    <td>${perc}%</td>
-                </tr>`;
+            document.getElementById('dashTotalVendas').innerText = totalVendido.toFixed(2) + " MT";
+            document.getElementById('dashCustoVendas').innerText = totalCustoCOGS.toFixed(2) + " MT";
+            document.getElementById('dashLucroReal').innerText = (totalVendido - totalCustoCOGS).toFixed(2) + " MT";
+
+            document.getElementById('fechoNum').innerText = canais['Numerário'].toFixed(2) + " MT";
+            document.getElementById('fechoMpesa').innerText = canais['M-Pesa'].toFixed(2) + " MT";
+            document.getElementById('fechoEmola').innerText = canais['e-Mola'].toFixed(2) + " MT";
+            document.getElementById('fechoPos').innerText = canais['POS'].toFixed(2) + " MT";
+
+            // Renderizar Vendedores
+            let tbodyVend = document.getElementById('corpoVendedores');
+            tbodyVend.innerHTML = '';
+            for(let u in porVendedor) {
+                let v = porVendedor[u];
+                let perc = totalVendido > 0 ? ((v.total / totalVendido) * 100).toFixed(1) : 0;
+                tbodyVend.innerHTML += `<tr><td><b>${u}</b></td><td>${v.qtd}</td><td>${v.total.toFixed(2)} MT</td><td>${perc}%</td></tr>`;
             }
 
-            document.getElementById('cardMelhorVendedor').innerText = melhorVendedorNome;
-
-            // Fecho de Caixa
-            document.getElementById('fechoNumerario').innerText = formatarMT(porMetodo['Numerário']);
-            document.getElementById('fechoMpesa').innerText = formatarMT(porMetodo['M-Pesa']);
-            document.getElementById('fechoEmola').innerText = formatarMT(porMetodo['e-Mola']);
-            document.getElementById('fechoPos').innerText = formatarMT(porMetodo['POS']);
-
-            // Método Líder
-            let canalLider = Object.keys(porMetodo).reduce((a, b) => porMetodo[a] > porMetodo[b] ? a : b);
-            document.getElementById('cardCanalPrincipal').innerText = porMetodo[canalLider] > 0 ? canalLider : '-';
-
-            // Histórico Geral
-            let corpoHistorico = document.getElementById('corpoTabelaHistorico');
-            corpoHistorico.innerHTML = '';
-            [...historico].reverse().forEach(reg => {
-                let corMov = reg.movimento === 'entrada' ? 'mov-entrada' : 'mov-saida';
-                let sinal = reg.movimento === 'entrada' ? '+' : '-';
-                let textoMov = reg.movimento === 'saida_cliente' ? `VENDA (${reg.pagamento || 'Numerário'})` : reg.movimento.toUpperCase();
-
-                corpoHistorico.innerHTML += `<tr>
-                    <td>${reg.data}</td>
-                    <td style="text-transform: capitalize;">${reg.usuario}</td>
-                    <td>${reg.produto.toUpperCase()}</td>
-                    <td class="${corMov}">${textoMov}</td>
-                    <td><b>${sinal}${reg.qtd}</b></td>
-                    <td><button class="btn-apagar" onclick="apagarRegisto(${reg.id})">Anular</button></td>
+            // Renderizar Histórico Admin
+            let tbodyHist = document.getElementById('corpoHistoricoAdmin');
+            tbodyHist.innerHTML = '';
+            [...historicoFiltrado].reverse().forEach(h => {
+                let detalhe = h.tipo === 'venda' ? h.itens.map(i => `${i.qtd}x ${i.produto}`).join(', ') : `${h.qtd}x ${h.produto}`;
+                let valor = h.tipo === 'venda' ? h.totalVenda.toFixed(2) + " MT" : "-";
+                tbodyHist.innerHTML += `<tr>
+                    <td>${h.data}</td>
+                    <td>${h.usuario}</td>
+                    <td>${detalhe}</td>
+                    <td><span class="badge">${h.tipo.toUpperCase()}</span></td>
+                    <td><b>${valor}</b></td>
+                    <td><button class="btn-saida btn-sm" onclick="anularRegisto(${h.id})">Anular</button></td>
                 </tr>`;
             });
-            atualizarTabelaUsuarios();
         } else {
-            // VISÃO DO FUNCIONÁRIO / VENDEDOR
-            let minhasVendas = vendas.filter(v => v.usuario === usuarioAtual.nome);
-            let meuTotal = minhasVendas.reduce((acc, curr) => acc + (curr.valorAfetado || 0), 0);
+            // VENDEDOR
+            let minhas = historicoFiltrado.filter(h => h.usuario === usuarioAtual.nome && h.tipo === 'venda');
+            let total = minhas.reduce((acc, i) => acc + i.totalVenda, 0);
+            document.getElementById('vendTotalValor').innerText = total.toFixed(2) + " MT";
+            document.getElementById('vendQtd').innerText = minhas.length;
 
-            document.getElementById('vendedorTotalValor').innerText = formatarMT(meuTotal);
-            document.getElementById('vendedorQtdVendas').innerText = minhasVendas.length;
-
-            let corpoMinhas = document.getElementById('corpoTabelaMinhasVendas');
-            corpoMinhas.innerHTML = '';
-            [...minhasVendas].reverse().forEach(v => {
-                corpoMinhas.innerHTML += `<tr>
-                    <td>${v.data}</td>
-                    <td>${v.produto.toUpperCase()}</td>
-                    <td>${v.qtd}</td>
-                    <td><b>${formatarMT(v.valorAfetado)}</b></td>
-                    <td>${v.pagamento || 'Numerário'}</td>
-                </tr>`;
+            let tbody = document.getElementById('corpoMinhasVendas');
+            tbody.innerHTML = '';
+            minhas.reverse().forEach(m => {
+                let itensStr = m.itens.map(i => `${i.qtd}x ${i.produto}`).join(', ');
+                tbody.innerHTML += `<tr><td>${m.data}</td><td>${itensStr}</td><td><b>${m.totalVenda.toFixed(2)} MT</b></td><td>${m.metodo}</td></tr>`;
             });
+        }
+        renderizarStock();
+    }
+
+    // IMPRESSÃO DE TALÃO DE COMPRA
+    function imprimirTalão(venda) {
+        document.getElementById('reciboData').innerText = venda.data;
+        document.getElementById('reciboVendedor').innerText = venda.usuario;
+        document.getElementById('reciboMetodo').innerText = venda.metodo;
+        
+        let divItens = document.getElementById('reciboItens');
+        divItens.innerHTML = '';
+        venda.itens.forEach(i => {
+            divItens.innerHTML += `<div style="display:flex; justify-content:space-between;">
+                <span>${i.qtd}x ${i.produto}</span>
+                <span>${i.subtotal.toFixed(2)} MT</span>
+            </div>`;
+        });
+        document.getElementById('reciboTotal').innerText = venda.totalVenda.toFixed(2);
+        window.print();
+    }
+
+    // PESQUISA E TABELA DE STOCK
+    function renderizarStock() {
+        let tbody = document.getElementById('corpoStock');
+        tbody.innerHTML = '';
+        let isAdmin = usuarioAtual && usuarioAtual.tipo === 'admin';
+
+        for(let p in stock) {
+            let item = stock[p];
+            let custoMedio = item.qtd > 0 ? (item.preco_total / item.qtd) : 0;
+            let minAlerta = item.min_alerta || 5;
+
+            let colFin = isAdmin ? `<td>${custoMedio.toFixed(2)} MT</td><td>${item.preco_total.toFixed(2)} MT</td>` : '';
+            let colAdmin = isAdmin ? `<td><button class="btn-saida btn-sm" onclick="apagarProduto('${p}')">Apagar</button></td>` : '';
+
+            tbody.innerHTML += `<tr class="linha-stock" data-nome="${p}" data-cat="${item.categoria || 'Geral'}">
+                <td><b>${p.toUpperCase()}</b></td>
+                <td><span class="badge">${item.categoria || 'Geral'}</span></td>
+                <td class="${item.qtd <= minAlerta ? 'alerta' : ''}">${item.qtd}</td>
+                <td>${minAlerta}</td>
+                ${colFin}
+                ${colAdmin}
+            </tr>`;
         }
     }
 
-    document.getElementById('formStock').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        let nomeProduto = document.getElementById('produto').value.trim().toLowerCase();
-        let tipoMovimento = document.getElementById('movimento').value;
-        let quantidade = parseFloat(document.getElementById('quantidade').value);
-        let precoInformado = parseFloat(document.getElementById('preco').value) || 0;
-        let metodoPagamento = document.getElementById('metodoPagamento').value;
-        let valorMovimentado = 0;
-
-        if (!stock[nomeProduto]) stock[nomeProduto] = { qtd: 0, preco_total: 0 };
-
-        if (tipoMovimento === 'entrada') {
-            if (precoInformado <= 0) { alert("Informe o preço do produto."); return; }
-            valorMovimentado = (quantidade * precoInformado);
-            stock[nomeProduto].qtd += quantidade;
-            stock[nomeProduto].preco_total += valorMovimentado;
-        } 
-        else if (tipoMovimento === 'saida_cliente') {
-            if (stock[nomeProduto].qtd >= quantidade) {
-                valorMovimentado = precoInformado > 0 ? precoInformado : (quantidade * (stock[nomeProduto].preco_total / stock[nomeProduto].qtd));
-                stock[nomeProduto].qtd -= quantidade;
-                stock[nomeProduto].preco_total -= valorMovimentado;
-            } else { alert('Stock insuficiente!'); return; }
-        }
-        else if (tipoMovimento.startsWith('saida')) {
-            if (stock[nomeProduto].qtd >= quantidade) {
-                let precoMedio = stock[nomeProduto].preco_total / stock[nomeProduto].qtd;
-                valorMovimentado = (quantidade * precoMedio);
-                stock[nomeProduto].qtd -= quantidade;
-                stock[nomeProduto].preco_total -= valorMovimentado;
-            } else { alert('Stock insuficiente!'); return; }
-        }
-
-        if (stock[nomeProduto].qtd < 0.01) { stock[nomeProduto].qtd = 0; stock[nomeProduto].preco_total = 0; }
-
-        let registoNovo = {
-            id: Date.now(),
-            data: new Date().toLocaleString('pt-MZ'),
-            usuario: usuarioAtual.nome,
-            produto: nomeProduto,
-            movimento: tipoMovimento,
-            qtd: quantidade,
-            valorAfetado: valorMovimentado
-        };
-
-        if (tipoMovimento === 'saida_cliente') registoNovo.pagamento = metodoPagamento;
-
-        historico.push(registoNovo);
-
-        await setDoc(doc(db, "sistema", "stock"), stock);
-        await setDoc(doc(db, "sistema", "historico"), { lista: historico });
-
-        document.getElementById('formStock').reset();
-        verificarMovimento();
-        document.getElementById('produto').focus();
-    });
-
-    window.apagarRegisto = async function(id) {
-        if (!confirm("Anular este registo e reajustar o stock?")) return;
-
-        let index = historico.findIndex(h => h.id === id);
-        if (index === -1) return;
-        let reg = historico[index];
-        
-        if (!stock[reg.produto]) stock[reg.produto] = { qtd: 0, preco_total: 0 };
-
-        if (reg.movimento === 'entrada') {
-            stock[reg.produto].qtd -= reg.qtd;
-            stock[reg.produto].preco_total -= reg.valorAfetado;
-        } else if (reg.movimento.startsWith('saida')) {
-            stock[reg.produto].qtd += reg.qtd;
-            stock[reg.produto].preco_total += reg.valorAfetado;
-        }
-
-        if (stock[reg.produto].qtd < 0.01) { stock[reg.produto].qtd = 0; stock[reg.produto].preco_total = 0; }
-
-        historico.splice(index, 1);
-        await setDoc(doc(db, "sistema", "stock"), stock);
-        await setDoc(doc(db, "sistema", "historico"), { lista: historico });
+    window.filtrarTabelaStock = function() {
+        let term = document.getElementById('searchStock').value.toLowerCase();
+        let cat = document.getElementById('filterCategoria').value;
+        document.querySelectorAll('.linha-stock').forEach(row => {
+            let mNome = row.getAttribute('data-nome').includes(term);
+            let mCat = !cat || row.getAttribute('data-cat') === cat;
+            row.style.display = (mNome && mCat) ? '' : 'none';
+        });
     };
 
-    verificarMovimento();
+    window.apagarProduto = async function(p) {
+        if(confirm(`Apagar ${p.toUpperCase()} do stock?`)) {
+            delete stock[p];
+            await setDoc(doc(db, "sistema", "stock"), stock);
+        }
+    };
+
+    window.anularRegisto = async function(id) {
+        if(confirm("Anular este registo?")) {
+            let idx = historico.findIndex(h => h.id === id);
+            if(idx !== -1) {
+                historico.splice(idx, 1);
+                await setDoc(doc(db, "sistema", "historico"), { lista: historico });
+            }
+        }
+    };
+
+    window.fazerBackup = function() {
+        let blob = new Blob([JSON.stringify({ usuarios, stock, historico }, null, 2)], { type: "application/json" });
+        let a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `backup_restaurante_${Date.now()}.json`;
+        a.click();
+    };
+
+    alternarModoOperacao();
 </script>
 
 </body>
