@@ -88,6 +88,8 @@
         th { background-color: #f1f3f5; }
         .alerta { color: var(--danger); font-weight: bold; }
         .badge { padding: 3px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold; background: #eee; }
+        .badge-entrada { background: #d4edda; color: #155724; }
+        .badge-saida { background: #f8d7da; color: #721c24; }
 
         /* Mesas Grid */
         .mesas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-bottom: 15px; }
@@ -343,8 +345,9 @@
                 <button class="btn-excel btn-sm" onclick="exportarStockExcel()">📊 Exportar Stock para Excel</button>
             </div>
 
+            <!-- FORMULÁRIO DE ENTRADA -->
             <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:15px;">
-                <h4>Dar Entrada de Produtos no Stock</h4>
+                <h4>📥 Dar Entrada de Produtos no Stock (Compras / Reposição)</h4>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Produto / Bebida</label>
@@ -409,7 +412,9 @@
                 <button class="btn-success" onclick="salvarEntradaStock()">📥 Dar Entrada / Atualizar Stock</button>
             </div>
 
-            <div class="table-responsive">
+            <!-- TABELA DE STOCK ATUAL -->
+            <h4>📦 Quantidade Atual de Produtos em Stock</h4>
+            <div class="table-responsive" style="margin-bottom:25px;">
                 <table>
                     <thead>
                         <tr>
@@ -424,6 +429,26 @@
                     </thead>
                     <tbody id="corpoStock"></tbody>
                 </table>
+            </div>
+
+            <!-- TABELA DE HISTÓRICO DE ENTRADAS E SAÍDAS DO STOCK -->
+            <div style="background:#fff; border:1px solid #dee2e6; padding:15px; border-radius:8px;">
+                <h4 style="margin-top:0;">📋 Histórico Completo de Movimentações do Stock (Entradas e Saídas)</h4>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Data / Hora</th>
+                                <th>Tipo de Movimento</th>
+                                <th>Produto</th>
+                                <th>Quantidade</th>
+                                <th>Utilizador</th>
+                                <th>Detalhes / Origem</th>
+                            </tr>
+                        </thead>
+                        <tbody id="corpoMovimentacoesStock"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -694,7 +719,7 @@
     const db = getFirestore(app);
 
     // Estado da Aplicação
-    let usuarios = {}, stock = {}, historico = [], clientes = [], despesas = [];
+    let usuarios = {}, stock = {}, historico = [], clientes = [], despesas = [], movimentacoesStock = [];
     let mesas = { "Balcão": [] };
     for(let i=1; i<=10; i++) mesas[`Mesa ${i}`] = [];
 
@@ -715,6 +740,11 @@
     onSnapshot(doc(db, "sistema", "stock"), (docSnap) => {
         stock = docSnap.exists() ? docSnap.data() : {};
         if (usuarioAtual) { atualizarDropdownProdutosCart(); renderizarStock(); verificarAlertasStock(); }
+    });
+
+    onSnapshot(doc(db, "sistema", "movimentacoes_stock"), (docSnap) => {
+        movimentacoesStock = docSnap.exists() ? (docSnap.data().lista || []) : [];
+        if (usuarioAtual) renderizarMovimentacoesStock();
     });
 
     onSnapshot(doc(db, "sistema", "historico"), (docSnap) => {
@@ -804,6 +834,7 @@
             renderizarMesasGrid();
             atualizarDropdownProdutosCart();
             renderizarStock();
+            renderizarMovimentacoesStock();
             renderizarEstadoCaixa();
             renderizarClientes();
             atualizarDashboard();
@@ -924,7 +955,6 @@
         }
     };
 
-    // EXCLUSIVO DO ADMIN: REDEFINIR SENHA DIRETA
     window.redefinirSenhaDiretaAdmin = async function(u) {
         if(usuarioAtual.tipo !== 'admin') return alert("Apenas o Administrador pode redefinir senhas!");
         let novaS = prompt(`ADMINISTRADOR: Digite a nova palavra-passe para o perfil '${u.toUpperCase()}':`);
@@ -936,7 +966,6 @@
         }
     };
 
-    // EXCLUSIVO DO ADMIN: ALTERAR FOTO DE PERFIL EXISTENTE
     window.alterarFotoUsuarioAdmin = function(u) {
         if(usuarioAtual.tipo !== 'admin') return alert("Apenas o Administrador pode alterar fotos de perfil!");
         let input = document.createElement('input');
@@ -1170,11 +1199,20 @@
             if(!clienteFiado) return alert("Selecione o cliente para registar o fiado.");
         }
 
-        // Atualizar Stock
+        // Abater do Stock e Registo da Saída no Histórico
         for(let item of itens) {
             stock[item.produto].qtd -= item.qtd;
             stock[item.produto].preco_total -= (item.qtd * item.custoUnit);
             if(stock[item.produto].qtd < 0.01) { stock[item.produto].qtd = 0; stock[item.produto].preco_total = 0; }
+
+            movimentacoesStock.push({
+                data: new Date().toLocaleString('pt-MZ'),
+                tipo: 'SAÍDA (VENDA)',
+                produto: item.produto,
+                qtd: item.qtd,
+                usuario: usuarioAtual.nome,
+                origem: `Venda ${mesaSelecionada} (${metodo})`
+            });
         }
 
         let registo = {
@@ -1202,6 +1240,7 @@
 
         historico.push(registo);
         await setDoc(doc(db, "sistema", "stock"), stock);
+        await setDoc(doc(db, "sistema", "movimentacoes_stock"), { lista: movimentacoesStock });
         await setDoc(doc(db, "sistema", "historico"), { lista: historico });
 
         imprimirTalão(registo);
@@ -1382,9 +1421,21 @@
         stock[prod].min_alerta = minAlerta;
         if(precoVendaUnit > 0) stock[prod].preco_venda = precoVendaUnit;
 
+        // Registo da Entrada no Histórico de Movimentações
+        movimentacoesStock.push({
+            data: new Date().toLocaleString('pt-MZ'),
+            tipo: 'ENTRADA (COMPRA)',
+            produto: prod,
+            qtd: totalUnidades,
+            usuario: usuarioAtual.nome,
+            origem: modoCompra === 'caixa' ? 'Compra por Caixa/Fardo' : 'Compra Avulsa'
+        });
+
         await setDoc(doc(db, "sistema", "stock"), stock);
+        await setDoc(doc(db, "sistema", "movimentacoes_stock"), { lista: movimentacoesStock });
+
         document.getElementById('simplesProduto').value = '';
-        alert("Stock atualizado!");
+        alert("Stock e histórico atualizados!");
     };
 
     function renderizarStock() {
@@ -1413,6 +1464,31 @@
                 ${colAdmin}
             </tr>`;
         }
+    }
+
+    function renderizarMovimentacoesStock() {
+        let tbody = document.getElementById('corpoMovimentacoesStock');
+        if(!tbody) return;
+        tbody.innerHTML = '';
+
+        if(movimentacoesStock.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#666;">Nenhuma movimentação registada.</td></tr>';
+            return;
+        }
+
+        movimentacoesStock.slice(-30).reverse().forEach(m => {
+            let isEntrada = m.tipo.includes('ENTRADA');
+            tbody.innerHTML += `<tr>
+                <td>${m.data}</td>
+                <td><span class="badge ${isEntrada ? 'badge-entrada' : 'badge-saida'}">${m.tipo}</span></td>
+                <td><b>${m.produto.toUpperCase()}</b></td>
+                <td style="font-weight:bold; color:${isEntrada ? 'var(--success)' : 'var(--danger)'};">
+                    ${isEntrada ? '+' : '-'}${m.qtd}
+                </td>
+                <td><b style="text-transform:uppercase;">${m.usuario}</b></td>
+                <td><small>${m.origem || '-'}</small></td>
+            </tr>`;
+        });
     }
 
     function verificarAlertasStock() {
@@ -1516,6 +1592,7 @@
         let backupData = {
             usuarios: usuariosSemSenhas,
             stock,
+            movimentacoesStock,
             historico,
             clientes,
             despesas,
