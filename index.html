@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Gestão - Restaurante Pro</title>
 
+    <!-- Biblioteca para Exportar para Excel (.xlsx) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
     <style>
         :root {
             --primary: #007bff;
@@ -31,6 +34,7 @@
         .btn-saida { background-color: var(--danger); }
         .btn-success { background-color: var(--success); }
         .btn-warning { background-color: var(--warning); color: white; }
+        .btn-excel { background-color: #1d6f42; color: white; }
         .btn-dark { background-color: #555; }
         .btn-sm { padding: 6px 12px; font-size: 12px; width: auto; margin: 0; }
 
@@ -59,16 +63,16 @@
         .carrinho-box { background: #eef7ff; border: 1px solid #b6e0fe; padding: 15px; border-radius: 8px; margin-top: 15px; }
 
         /* Modal de Definições */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
-        .modal-content { background: white; max-width: 500px; margin: 10% auto; padding: 20px; border-radius: 8px; position: relative; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); overflow-y: auto; }
+        .modal-content { background: white; max-width: 550px; margin: 5% auto; padding: 20px; border-radius: 8px; position: relative; }
         .close-modal { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; }
 
-        /* Estilo para Impressão do Recibo */
+        /* Estilo para Impressão do Recibo / Talão Fiscal */
         #areaRecibo { display: none; }
         @media print {
             body * { visibility: hidden; }
             #areaRecibo, #areaRecibo * { visibility: visible; }
-            #areaRecibo { display: block; position: absolute; left: 0; top: 0; width: 80mm; font-family: monospace; font-size: 12px; }
+            #areaRecibo { display: block; position: absolute; left: 0; top: 0; width: 80mm; font-family: 'Courier New', Courier, monospace; font-size: 11px; padding: 5px; }
         }
 
         @media (max-width: 768px) {
@@ -102,7 +106,7 @@
         <div class="header-usuario">
             <div><strong>Sessão Ativa: <span id="nomeUsuarioLogado" style="color:var(--primary); text-transform:uppercase;"></span></strong></div>
             <div class="acoes-header">
-                <button id="btnDefinicoes" class="btn-warning btn-sm" onclick="abrirModalDefinicoes()">⚙️ Definições</button>
+                <button id="btnDefinicoes" class="btn-warning btn-sm" onclick="abrirModalDefinicoes()">⚙️ Definições & NUIT</button>
                 <button class="btn-dark btn-sm" onclick="fazerLogout()">Sair</button>
             </div>
         </div>
@@ -185,7 +189,7 @@
                     <span style="font-size:1.2em; font-weight:bold;">Total Venda: <span id="cartTotalTexto" style="color:var(--success);">0.00 MT</span></span>
                 </div>
                 <div class="form-group">
-                    <button type="button" class="btn-success" style="font-size:1.1em;" onclick="finalizarVendaCarrinho()">✅ Finalizar & Imprimir</button>
+                    <button type="button" class="btn-success" style="font-size:1.1em;" onclick="finalizarVendaCarrinho()">✅ Finalizar & Imprimir Talão</button>
                 </div>
             </div>
         </div>
@@ -205,6 +209,9 @@
                         <option value="mes">Este Mês</option>
                         <option value="todos">Todo o Histórico</option>
                     </select>
+                </div>
+                <div class="form-group" style="margin:0; text-align:right; align-self:flex-end;">
+                    <button class="btn-excel btn-sm" onclick="exportarVendasExcel()">📊 Exportar Vendas para Excel</button>
                 </div>
             </div>
 
@@ -269,9 +276,12 @@
 
         <!-- MÓDULO DE GERENCIAMENTO DE STOCK -->
         <hr style="margin-top:30px;">
-        <h2>Gestão de Stock na Despensa</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+            <h2>Gestão de Stock na Despensa</h2>
+            <button class="btn-excel btn-sm" onclick="exportarStockExcel()">📊 Exportar Stock para Excel</button>
+        </div>
 
-        <div class="form-row" style="align-items:center;">
+        <div class="form-row" style="align-items:center; margin-top:10px;">
             <div class="form-group">
                 <input type="text" id="searchStock" placeholder="🔍 Pesquisar produto..." onkeyup="filtrarTabelaStock()">
             </div>
@@ -302,15 +312,43 @@
     </div>
 </div>
 
-<!-- MODAL DE DEFINIÇÕES E GESTÃO DE USUÁRIOS -->
+<!-- MODAL DE DEFINIÇÕES E DADOS DA EMPRESA -->
 <div id="modalDefinicoes" class="modal">
     <div class="modal-content">
         <span class="close-modal" onclick="fecharModalDefinicoes()">&times;</span>
         <h3>⚙️ Definições do Sistema</h3>
         
+        <!-- DADOS DA EMPRESA / NUIT (APENAS ADMIN) -->
+        <div id="seccaoEmpresaAdmin" style="display:none; background:#eef7ff; padding:12px; border-radius:6px; margin-bottom:15px; border:1px solid #b6e0fe;">
+            <h4 style="margin-top:0; color:var(--primary);">🏢 Dados do Restaurante / NUIT</h4>
+            <div class="form-group">
+                <label>Nome do Restaurante / Empresa</label>
+                <input type="text" id="cfgNomeEmpresa" placeholder="Ex: Restaurante Sabores de Maputo">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>NUIT</label>
+                    <input type="text" id="cfgNuit" placeholder="Ex: 123456789">
+                </div>
+                <div class="form-group">
+                    <label>Telefone / Contacto</label>
+                    <input type="text" id="cfgTelefone" placeholder="Ex: +258 84 000 0000">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Endereço / Bairro / Cidade</label>
+                <input type="text" id="cfgEndereco" placeholder="Ex: Av. Eduardo Mondlane, Maputo">
+            </div>
+            <div class="form-group">
+                <label>Slogan / Mensagem no Rodapé do Recibo</label>
+                <input type="text" id="cfgSlogan" placeholder="Ex: Obrigado pela preferência! Volte sempre.">
+            </div>
+            <button class="btn-primary btn-sm" onclick="guardarDadosEmpresa()">💾 Guardar Dados da Empresa</button>
+        </div>
+
         <!-- ALTERAR PALAVRA PASSE -->
         <div style="background:#f8f9fa; padding:12px; border-radius:6px; margin-bottom:15px;">
-            <h4>Alterar Minha Palavra-Passe</h4>
+            <h4 style="margin-top:0;">Alterar Minha Palavra-Passe</h4>
             <input type="password" id="inputNovaSenha" placeholder="Nova palavra-passe" style="margin-bottom:8px;">
             <button class="btn-success btn-sm" onclick="mudarMinhaSenha()">Guardar Nova Senha</button>
         </div>
@@ -318,13 +356,13 @@
         <!-- GESTÃO ADMIN (APENAS PARA O PERFIL ADMIN) -->
         <div id="seccaoGestaoAdmin" style="display:none;">
             <div style="background:#f8f9fa; padding:12px; border-radius:6px; margin-bottom:15px;">
-                <h4>Renomear Nome da Conta Admin</h4>
+                <h4 style="margin-top:0;">Renomear Conta Admin</h4>
                 <input type="text" id="inputNovoNomeAdmin" placeholder="Novo nome de utilizador Admin" style="margin-bottom:8px;">
                 <button class="btn-warning btn-sm" onclick="renomearContaAdmin()">Alterar Nome Admin</button>
             </div>
 
             <div style="background:#f8f9fa; padding:12px; border-radius:6px;">
-                <h4>Criar / Gerir Vendedores</h4>
+                <h4 style="margin-top:0;">Criar / Gerir Vendedores</h4>
                 <div class="form-group">
                     <input type="text" id="novoVendedorUser" placeholder="Nome do vendedor" style="margin-bottom:5px;">
                     <input type="password" id="novoVendedorPass" placeholder="Palavra-passe" style="margin-bottom:5px;">
@@ -337,21 +375,26 @@
     </div>
 </div>
 
-<!-- ÁREA DE IMPRESSÃO DE RECIBO -->
+<!-- ÁREA DE IMPRESSÃO DE RECIBO / TALÃO FISCAL -->
 <div id="areaRecibo">
     <div style="text-align:center;">
-        <h3 style="margin:0;">RESTAURANTE</h3>
-        <p style="margin:2px 0;">Comprovativo de Venda</p>
+        <h3 id="reciboNomeEmpresa" style="margin:0; font-size:14px; text-transform:uppercase;">RESTAURANTE</h3>
+        <p id="reciboNuit" style="margin:2px 0;">NUIT: ---</p>
+        <p id="reciboEndereco" style="margin:2px 0; font-size:10px;"></p>
+        <p id="reciboTelefone" style="margin:2px 0; font-size:10px;"></p>
+        <p style="margin:5px 0; font-weight:bold;">--------------------------------</p>
+        <p style="margin:2px 0;">COMPROVATIVO DE VENDA</p>
         <p id="reciboData" style="margin:2px 0; font-size:10px;"></p>
     </div>
-    <hr style="border-dash: 1px dashed #000;">
-    <p><b>Atendido por:</b> <span id="reciboVendedor"></span></p>
-    <p><b>Pagamento:</b> <span id="reciboMetodo"></span></p>
-    <hr style="border-dash: 1px dashed #000;">
+    <p style="margin:5px 0;">--------------------------------</p>
+    <p style="margin:2px 0;"><b>Atendido por:</b> <span id="reciboVendedor"></span></p>
+    <p style="margin:2px 0;"><b>Pagamento:</b> <span id="reciboMetodo"></span></p>
+    <p style="margin:5px 0;">--------------------------------</p>
     <div id="reciboItens"></div>
-    <hr style="border-dash: 1px dashed #000;">
-    <h4 style="text-align:right; margin:5px 0;">TOTAL: <span id="reciboTotal"></span> MT</h4>
-    <p style="text-align:center; font-size:10px; margin-top:15px;">Obrigado pela preferência!</p>
+    <p style="margin:5px 0;">--------------------------------</p>
+    <h4 style="text-align:right; margin:5px 0; font-size:13px;">TOTAL: <span id="reciboTotal"></span> MT</h4>
+    <p style="margin:5px 0;">--------------------------------</p>
+    <p id="reciboSlogan" style="text-align:center; font-size:10px; margin-top:10px;">Obrigado pela preferência!</p>
 </div>
 
 <!-- FIREBASE SDK & LÓGICA DO SISTEMA -->
@@ -375,6 +418,7 @@
     let stock = {};
     let historico = [];
     let carrinho = [];
+    let dadosEmpresa = { nome: "RESTAURANTE", nuit: "", endereco: "", telefone: "", slogan: "Obrigado pela preferência!" };
     let usuarioAtual = null;
 
     // Escuta em Tempo Real
@@ -385,6 +429,10 @@
             await setDoc(doc(db, "sistema", "usuarios"), usuarios);
         }
         verificarEstadoInicial();
+    });
+
+    onSnapshot(doc(db, "sistema", "empresa"), (docSnap) => {
+        if (docSnap.exists()) { dadosEmpresa = docSnap.data(); preencherFormEmpresa(); }
     });
 
     onSnapshot(doc(db, "sistema", "stock"), async (docSnap) => {
@@ -432,6 +480,7 @@
         document.getElementById('painelAdminSection').style.display = isAdmin ? 'block' : 'none';
         document.getElementById('painelVendedorSection').style.display = !isAdmin ? 'block' : 'none';
         document.getElementById('seccaoGestaoAdmin').style.display = isAdmin ? 'block' : 'none';
+        document.getElementById('seccaoEmpresaAdmin').style.display = isAdmin ? 'block' : 'none';
         
         let colsFin = document.getElementsByClassName('col-fin');
         for (let el of colsFin) el.style.display = isAdmin ? 'table-cell' : 'none';
@@ -439,9 +488,33 @@
         for (let el of colsAdmin) el.style.display = isAdmin ? 'table-cell' : 'none';
     }
 
+    // GESTÃO DADOS DA EMPRESA
+    function preencherFormEmpresa() {
+        if(document.getElementById('cfgNomeEmpresa')) {
+            document.getElementById('cfgNomeEmpresa').value = dadosEmpresa.nome || '';
+            document.getElementById('cfgNuit').value = dadosEmpresa.nuit || '';
+            document.getElementById('cfgTelefone').value = dadosEmpresa.telefone || '';
+            document.getElementById('cfgEndereco').value = dadosEmpresa.endereco || '';
+            document.getElementById('cfgSlogan').value = dadosEmpresa.slogan || '';
+        }
+    }
+
+    window.guardarDadosEmpresa = async function() {
+        dadosEmpresa = {
+            nome: document.getElementById('cfgNomeEmpresa').value.trim() || 'RESTAURANTE',
+            nuit: document.getElementById('cfgNuit').value.trim(),
+            telefone: document.getElementById('cfgTelefone').value.trim(),
+            endereco: document.getElementById('cfgEndereco').value.trim(),
+            slogan: document.getElementById('cfgSlogan').value.trim() || 'Obrigado pela preferência!'
+        };
+        await setDoc(doc(db, "sistema", "empresa"), dadosEmpresa);
+        alert("Dados da empresa e NUIT salvos com sucesso!");
+    };
+
     // GESTÃO DE DEFINIÇÕES
     window.abrirModalDefinicoes = function() {
         document.getElementById('modalDefinicoes').style.display = 'block';
+        preencherFormEmpresa();
         if (usuarioAtual.tipo === 'admin') renderizarListaVendedoresModal();
     };
     window.fecharModalDefinicoes = function() {
@@ -533,7 +606,7 @@
         let prod = document.getElementById('cartSelectProduto').value;
         if(prod && stock[prod] && stock[prod].qtd > 0) {
             let costoMedio = stock[prod].preco_total / stock[prod].qtd;
-            document.getElementById('cartPrecoUnit').value = (costoMedio * 1.3).toFixed(2); // Estimativa de preço
+            document.getElementById('cartPrecoUnit').value = (costoMedio * 1.3).toFixed(2);
         }
     };
 
@@ -582,7 +655,6 @@
         let totalVenda = carrinho.reduce((acc, i) => acc + i.subtotal, 0);
         let totalCusto = carrinho.reduce((acc, i) => acc + (i.qtd * i.custoUnit), 0);
 
-        // Abater Stock
         for(let item of carrinho) {
             stock[item.produto].qtd -= item.qtd;
             stock[item.produto].preco_total -= (item.qtd * item.custoUnit);
@@ -611,7 +683,7 @@
         alert("Venda realizada com sucesso!");
     };
 
-    // MOVIMENTOS SIMPLES (ENTRADA / PERDA / COZINHA)
+    // MOVIMENTOS SIMPLES
     document.getElementById('formMovimentoSimples').addEventListener('submit', async function(e) {
         e.preventDefault();
         let prod = document.getElementById('simplesProduto').value.trim().toLowerCase();
@@ -652,16 +724,13 @@
         alert("Operação registada!");
     });
 
-    // CÁLCULOS FINANCEIROS E RELATÓRIOS POR DATA
+    // CÁLCULOS FINANCEIROS E RELATÓRIOS
     window.filtrarDadosPorData = function() { atualizarTabelas(); };
 
-    function atualizarTabelas() {
-        if(!usuarioAtual) return;
-        let isAdmin = usuarioAtual.tipo === 'admin';
+    function obterHistoricoFiltrado() {
         let filtroTipo = document.getElementById('filtroDataTipo').value;
-
         let agora = new Date();
-        let historicoFiltrado = historico.filter(h => {
+        return historico.filter(h => {
             if(filtroTipo === 'todos') return true;
             let d = new Date(h.timestamp || Date.now());
             if(filtroTipo === 'hoje') return d.toDateString() === agora.toDateString();
@@ -672,6 +741,12 @@
             if(filtroTipo === 'mes') return d.getMonth() === agora.getMonth() && d.getFullYear() === agora.getFullYear();
             return true;
         });
+    }
+
+    function atualizarTabelas() {
+        if(!usuarioAtual) return;
+        let isAdmin = usuarioAtual.tipo === 'admin';
+        let historicoFiltrado = obterHistoricoFiltrado();
 
         if(isAdmin) {
             let totalVendido = 0, totalCustoCOGS = 0;
@@ -699,7 +774,6 @@
             document.getElementById('fechoEmola').innerText = canais['e-Mola'].toFixed(2) + " MT";
             document.getElementById('fechoPos').innerText = canais['POS'].toFixed(2) + " MT";
 
-            // Renderizar Vendedores
             let tbodyVend = document.getElementById('corpoVendedores');
             tbodyVend.innerHTML = '';
             for(let u in porVendedor) {
@@ -708,7 +782,6 @@
                 tbodyVend.innerHTML += `<tr><td><b>${u}</b></td><td>${v.qtd}</td><td>${v.total.toFixed(2)} MT</td><td>${perc}%</td></tr>`;
             }
 
-            // Renderizar Histórico Admin
             let tbodyHist = document.getElementById('corpoHistoricoAdmin');
             tbodyHist.innerHTML = '';
             [...historicoFiltrado].reverse().forEach(h => {
@@ -724,7 +797,6 @@
                 </tr>`;
             });
         } else {
-            // VENDEDOR
             let minhas = historicoFiltrado.filter(h => h.usuario === usuarioAtual.nome && h.tipo === 'venda');
             let total = minhas.reduce((acc, i) => acc + i.totalVenda, 0);
             document.getElementById('vendTotalValor').innerText = total.toFixed(2) + " MT";
@@ -740,8 +812,62 @@
         renderizarStock();
     }
 
-    // IMPRESSÃO DE TALÃO DE COMPRA
+    // EXPORTAÇÃO PARA EXCEL (.XLSX)
+    window.exportarVendasExcel = function() {
+        let lista = obterHistoricoFiltrado();
+        if(lista.length === 0) return alert("Não existem dados para exportar no período selecionado.");
+
+        let dadosExcel = lista.map(item => {
+            let produtosStr = item.tipo === 'venda' ? item.itens.map(i => `${i.qtd}x ${i.produto}`).join('; ') : `${item.qtd}x ${item.produto}`;
+            return {
+                "Data/Hora": item.data,
+                "Utilizador": item.usuario,
+                "Tipo Operação": item.tipo.toUpperCase(),
+                "Itens / Produtos": produtosStr,
+                "Método Pagamento": item.metodo || "-",
+                "Valor Total (MT)": item.totalVenda || 0,
+                "Custo COGS (MT)": item.totalCusto || 0,
+                "Lucro Líquido (MT)": (item.totalVenda && item.totalCusto) ? (item.totalVenda - item.totalCusto) : 0
+            };
+        });
+
+        let ws = XLSX.utils.json_to_sheet(dadosExcel);
+        let wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Relatório de Vendas");
+        XLSX.writeFile(wb, `Relatorio_Vendas_${Date.now()}.xlsx`);
+    };
+
+    window.exportarStockExcel = function() {
+        let dadosStock = [];
+        for(let p in stock) {
+            let item = stock[p];
+            let custoMedio = item.qtd > 0 ? (item.preco_total / item.qtd) : 0;
+            dadosStock.push({
+                "Produto": p.toUpperCase(),
+                "Categoria": item.categoria || "Geral",
+                "Quantidade em Stock": item.qtd,
+                "Alerta Mínimo": item.min_alerta || 5,
+                "Custo Médio Unitário (MT)": custoMedio.toFixed(2),
+                "Valor Total em Custo (MT)": item.preco_total.toFixed(2)
+            });
+        }
+
+        if(dadosStock.length === 0) return alert("O stock está vazio.");
+
+        let ws = XLSX.utils.json_to_sheet(dadosStock);
+        let wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Inventário de Stock");
+        XLSX.writeFile(wb, `Inventario_Stock_${Date.now()}.xlsx`);
+    };
+
+    // IMPRESSÃO DE TALÃO DE COMPRA COM DADOS DA EMPRESA
     function imprimirTalão(venda) {
+        document.getElementById('reciboNomeEmpresa').innerText = dadosEmpresa.nome || 'RESTAURANTE';
+        document.getElementById('reciboNuit').innerText = dadosEmpresa.nuit ? `NUIT: ${dadosEmpresa.nuit}` : '';
+        document.getElementById('reciboEndereco').innerText = dadosEmpresa.endereco || '';
+        document.getElementById('reciboTelefone').innerText = dadosEmpresa.telefone ? `Tel: ${dadosEmpresa.telefone}` : '';
+        document.getElementById('reciboSlogan').innerText = dadosEmpresa.slogan || 'Obrigado pela preferência!';
+
         document.getElementById('reciboData').innerText = venda.data;
         document.getElementById('reciboVendedor').innerText = venda.usuario;
         document.getElementById('reciboMetodo').innerText = venda.metodo;
@@ -749,7 +875,7 @@
         let divItens = document.getElementById('reciboItens');
         divItens.innerHTML = '';
         venda.itens.forEach(i => {
-            divItens.innerHTML += `<div style="display:flex; justify-content:space-between;">
+            divItens.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:2px;">
                 <span>${i.qtd}x ${i.produto}</span>
                 <span>${i.subtotal.toFixed(2)} MT</span>
             </div>`;
@@ -811,7 +937,7 @@
     };
 
     window.fazerBackup = function() {
-        let blob = new Blob([JSON.stringify({ usuarios, stock, historico }, null, 2)], { type: "application/json" });
+        let blob = new Blob([JSON.stringify({ usuarios, stock, historico, dadosEmpresa }, null, 2)], { type: "application/json" });
         let a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = `backup_restaurante_${Date.now()}.json`;
