@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Gestão Master - Restaurante Pro (SaaS)</title>
 
+    <!-- Meta Tags PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#007bff">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Restaurante Pro">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
     <!-- Bibliotecas Externas (Excel, Gráficos e QR Code) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -89,7 +98,7 @@
         .alerta { color: var(--danger); font-weight: bold; }
         .badge { padding: 3px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold; background: #eee; }
         .badge-entrada { background: #d4edda; color: #155724; }
-        .badge-saida { background: #f8f9fa; color: #721c24; }
+        .badge-saida { background: #f8d7da; color: #721c24; }
 
         /* Mesas Grid */
         .mesas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-bottom: 15px; }
@@ -120,7 +129,7 @@
 
 <div class="container">
 
-    <!-- ECRÃ DE LOGIN MULTI-TENANT (SaaS) -->
+    <!-- ECRÃ DE LOGIN MULTI-TENANT COM VERIFICAÇÃO DE LICENÇA -->
     <div id="telaLogin" style="max-width:480px; margin:20px auto;">
         <h2 style="text-align:center; margin-bottom:5px;">Entrar no Sistema</h2>
         <p style="text-align:center; font-size:0.85em; color:#666; margin-top:0;">Introduza o Código da Empresa e as suas credenciais:</p>
@@ -128,9 +137,28 @@
         <div style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px solid #dee2e6; margin-bottom:15px;">
             <div class="form-group">
                 <label style="color:var(--primary); font-weight:bold;">🏢 Código do Restaurante / Licença</label>
-                <input type="text" id="loginCodigoEmpresa" placeholder="Ex: REST01, SABORES, BAR-MAPUTO" style="text-transform:uppercase; font-weight:bold;" onchange="carregarPerfisEmpresa()">
+                <input type="text" id="loginCodigoEmpresa" placeholder="Ex: BAR-MUNHUANA, SABORES01" style="text-transform:uppercase; font-weight:bold;" onchange="carregarPerfisEmpresa()">
             </div>
-            <button class="btn-primary btn-sm" onclick="carregarPerfisEmpresa()">🔍 Buscar Perfis do Restaurante</button>
+            <button class="btn-primary btn-sm" onclick="carregarPerfisEmpresa()">🔍 Validar Licença & Carregar Perfis</button>
+        </div>
+
+        <!-- BANNER DE CONTA BLOQUEADA / DADOS DE PAGAMENTO M-PESA -->
+        <div id="boxContaBloqueada" style="display:none; background:#fff5f5; border:2px solid #dc3545; padding:18px; border-radius:10px; margin-bottom:15px; text-align:center;">
+            <h3 style="color:#dc3545; margin-top:0;">🔴 ACESSO SUSPENSO / LICENÇA EXPIRADA</h3>
+            <p id="textoMotivoBloqueio" style="font-size:0.9em; color:#333; margin-bottom:10px;"></p>
+            
+            <div style="background:#fff; border:1px dashed #dc3545; padding:12px; border-radius:8px; margin:12px 0; text-align:left;">
+                <strong style="color:#007bff; display:block; margin-bottom:6px;">📱 Dados para Reativação (M-Pesa / e-Mola):</strong>
+                <div style="font-size:0.9em; line-height:1.6; color:#222;">
+                    • <b>M-Pesa:</b> 84 903 0686 (Valter Lopes)<br>
+                    • <b>e-Mola:</b> 84 903 0686 (Valter Lopes)<br>
+                    • <b>Valor da Mensalidade:</b> 1.500 MT
+                </div>
+            </div>
+            
+            <p style="font-size:0.85em; color:#555; margin-bottom:0;">
+                Após efetuar o pagamento, envie o comprovativo via WhatsApp para <b>+258 84 903 0686</b> para reativar o sistema instantaneamente.
+            </p>
         </div>
 
         <div id="seccaoPerfisEForm" style="display:none;">
@@ -708,10 +736,10 @@
     </div>
 </div>
 
-<!-- LÓGICA JAVASCRIPT & FIREBASE MULTI-TENANT -->
+<!-- LÓGICA JAVASCRIPT & FIREBASE MULTI-TENANT COM VERIFICAÇÃO DE LICENÇA -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyD-o0URCIdhrv7j_ftbTQ5ZlHzGCrw0QL4",
@@ -724,6 +752,13 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+
+    // Registo de Service Worker para PWA
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js').catch(() => {});
+        });
+    }
 
     // Estado da Aplicação Multi-Tenant
     let codigoEmpresa = "";
@@ -738,48 +773,86 @@
     let chartInstance = null;
     let unsubscribes = [];
 
-    // Ligar aos dados isolados da empresa selecionada
-    window.carregarPerfisEmpresa = function() {
+    // Ligar e verificar licença da empresa
+    window.carregarPerfisEmpresa = async function() {
         let codeInput = document.getElementById('loginCodigoEmpresa').value.trim().toUpperCase();
         if(!codeInput) return alert("Por favor, introduza o Código do Restaurante!");
 
         codigoEmpresa = codeInput;
-        desconectarEscutadores();
 
-        document.getElementById('seccaoPerfisEForm').style.display = 'block';
+        try {
+            // 1. VERIFICAR LICENÇA CENTRAL NO FIREBASE
+            const docLicenca = await getDoc(doc(db, "licencas", codigoEmpresa));
 
-        // Listener de Utilizadores da Empresa
-        let unsubUser = onSnapshot(doc(db, "empresas", codigoEmpresa, "dados", "usuarios"), async (docSnap) => {
-            if (docSnap.exists()) {
-                usuarios = docSnap.data();
+            if (docLicenca.exists()) {
+                let dadosLicenca = docLicenca.data();
+                let hoje = new Date().toISOString().split('T')[0];
+
+                if (dadosLicenca.status === "suspenso") {
+                    document.getElementById('seccaoPerfisEForm').style.display = 'none';
+                    document.getElementById('boxContaBloqueada').style.display = 'block';
+                    document.getElementById('textoMotivoBloqueio').innerText = dadosLicenca.mensagemBloqueio || 'A mensalidade deste restaurante encontra-se em atraso.';
+                    return;
+                }
+
+                if (dadosLicenca.validade && dadosLicenca.validade < hoje) {
+                    document.getElementById('seccaoPerfisEForm').style.display = 'none';
+                    document.getElementById('boxContaBloqueada').style.display = 'block';
+                    document.getElementById('textoMotivoBloqueio').innerText = `A sua subscrição venceu no dia ${dadosLicenca.validade}.`;
+                    return;
+                }
             } else {
-                // Se a empresa é nova, cria o perfil Admin padrão
-                usuarios = { "admin": { senha: "123", tipo: "admin", foto: "" } };
-                await setDoc(doc(db, "empresas", codigoEmpresa, "dados", "usuarios"), usuarios);
-            }
-            renderizarPerfisLogin();
-            if (usuarioAtual && usuarioAtual.tipo === 'admin') renderizarUsuarios();
-        });
+                // Se for a primeira vez que usa o código, cria a licença de teste por 7 dias
+                let dataTeste = new Date();
+                dataTeste.setDate(dataTeste.getDate() + 7);
+                let validadeTeste = dataTeste.toISOString().split('T')[0];
 
-        unsubscribes.push(unsubUser);
+                await setDoc(doc(db, "licencas", codigoEmpresa), {
+                    status: "ativo",
+                    validade: validadeTeste,
+                    mensagemBloqueio: "Acesso suspenso por falta de pagamento.",
+                    dataCriacao: new Date().toLocaleString('pt-MZ')
+                });
+                alert(`🎉 Novo restaurante detetado! Foi ativado um período de teste gratuito de 7 dias (Válido até ${validadeTeste}).`);
+            }
+
+            // 2. SE A LICENÇA ESTIVER VÁLIDA, ESCONDE BLOQUEIO E CARREGA
+            document.getElementById('boxContaBloqueada').style.display = 'none';
+            desconectarEscutadores();
+            document.getElementById('seccaoPerfisEForm').style.display = 'block';
+
+            let unsubUser = onSnapshot(doc(db, "empresas", codigoEmpresa, "dados", "usuarios"), async (docSnap) => {
+                if (docSnap.exists()) {
+                    usuarios = docSnap.data();
+                } else {
+                    usuarios = { "admin": { senha: "123", tipo: "admin", foto: "" } };
+                    await setDoc(doc(db, "empresas", codigoEmpresa, "dados", "usuarios"), usuarios);
+                }
+                renderizarPerfisLogin();
+                if (usuarioAtual && usuarioAtual.tipo === 'admin') renderizarUsuarios();
+            });
+
+            unsubscribes.push(unsubUser);
+
+        } catch (erro) {
+            console.error("Erro ao verificar licença:", erro);
+            alert("Erro ao ligar ao servidor de licenças. Verifique a sua ligação à internet.");
+        }
     };
 
     function iniciarEscutadoresCompletosEmpresa() {
         if(!codigoEmpresa) return;
 
-        // Stock
         unsubscribes.push(onSnapshot(doc(db, "empresas", codigoEmpresa, "dados", "stock"), (docSnap) => {
             stock = docSnap.exists() ? docSnap.data() : {};
             if (usuarioAtual) { atualizarDropdownProdutosCart(); renderizarStock(); verificarAlertasStock(); }
         }));
 
-        // Movimentações Stock
         unsubscribes.push(onSnapshot(doc(db, "empresas", codigoEmpresa, "dados", "movimentacoes_stock"), (docSnap) => {
             movimentacoesStock = docSnap.exists() ? (docSnap.data().lista || []) : [];
             if (usuarioAtual) renderizarMovimentacoesStock();
         }));
 
-        // Histórico
         unsubscribes.push(onSnapshot(doc(db, "empresas", codigoEmpresa, "dados", "historico"), (docSnap) => {
             historico = docSnap.exists() ? (docSnap.data().lista || []) : [];
             if (usuarioAtual) {
@@ -788,25 +861,21 @@
             }
         }));
 
-        // Clientes
         unsubscribes.push(onSnapshot(doc(db, "empresas", codigoEmpresa, "dados", "clientes"), (docSnap) => {
             clientes = docSnap.exists() ? (docSnap.data().lista || []) : [];
             if (usuarioAtual) { renderizarClientes(); atualizarDropdownClientesFiado(); }
         }));
 
-        // Caixa
         unsubscribes.push(onSnapshot(doc(db, "empresas", codigoEmpresa, "dados", "caixa"), (docSnap) => {
             caixaEstado = docSnap.exists() ? docSnap.data() : { aberto: false, fundo: 0 };
             if (usuarioAtual) renderizarEstadoCaixa();
         }));
 
-        // Despesas
         unsubscribes.push(onSnapshot(doc(db, "empresas", codigoEmpresa, "dados", "despesas"), (docSnap) => {
             despesas = docSnap.exists() ? (docSnap.data().lista || []) : [];
             if (usuarioAtual) renderizarEstadoCaixa();
         }));
 
-        // Empresa
         unsubscribes.push(onSnapshot(doc(db, "empresas", codigoEmpresa, "dados", "empresa"), (docSnap) => {
             if (docSnap.exists()) {
                 dadosEmpresa = docSnap.data();
@@ -820,7 +889,6 @@
         unsubscribes = [];
     }
 
-    // RENDERIZAR PERFIS NA PÁGINA DE ENTRADA (LOGIN)
     function renderizarPerfisLogin() {
         let container = document.getElementById('gridPerfisLogin');
         if (!container) return;
@@ -848,7 +916,6 @@
         if (event && event.currentTarget) event.currentTarget.classList.add('ativo');
     };
 
-    // LOGIN & LOGOUT
     window.fazerLogin = function() {
         let u = document.getElementById('loginUser').value.trim().toLowerCase();
         let p = document.getElementById('loginPass').value;
@@ -895,7 +962,6 @@
         document.getElementById('loginPass').value = '';
     };
 
-    // REDEFINIR PALAVRA-PASSE SEGURA
     window.abrirModalResetSenha = function() { document.getElementById('modalResetSenha').style.display = 'block'; };
     window.fecharModalResetSenha = function() {
         document.getElementById('modalResetSenha').style.display = 'none';
@@ -931,7 +997,6 @@
         document.getElementById('seccaoEmpresaAdmin').style.display = isAdmin ? 'block' : 'none';
     }
 
-    // ABAS
     window.mudarAba = function(abaId) {
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
@@ -942,7 +1007,6 @@
         if(abaId === 'abaUsuarios' && usuarioAtual.tipo === 'admin') renderizarUsuarios();
     };
 
-    // GESTÃO DE PERFIS & FOTOS
     function processarFotoAvatar(file, callback) {
         if (!file) return callback("");
         let reader = new FileReader();
@@ -1086,7 +1150,6 @@
         document.getElementById('seccaoDetalhesPerfil').style.display = 'none';
     };
 
-    // CAIXA
     function renderizarEstadoCaixa() {
         let banner = document.getElementById('bannerStatusCaixa');
         let txt = document.getElementById('textoStatusCaixa');
@@ -1143,7 +1206,6 @@
         alert("Despesa registada!");
     };
 
-    // MESAS E CARRINHO
     function renderizarMesasGrid() {
         let grid = document.getElementById('gridMesas');
         grid.innerHTML = '';
@@ -1345,7 +1407,6 @@
         window.print();
     }
 
-    // CLIENTES & FIADO
     window.cadastrarCliente = async function() {
         let nome = document.getElementById('novoClienteNome').value.trim();
         let tel = document.getElementById('novoClienteTelefone').value.trim();
@@ -1396,7 +1457,6 @@
         document.getElementById('boxSeletorClienteFiado').style.display = (met === 'Fiado') ? 'block' : 'none';
     };
 
-    // CALCULADORA DE CAIXA DE BEBIDAS / FARDO
     window.calcularPrecosEntrada = function() {
         let modoCompra = document.getElementById('simplesModoCompra').value;
         let totalUnidades = 0, custoUnitario = 0;
@@ -1535,7 +1595,6 @@
         document.getElementById('boxAlertaStockGlobal').style.display = temCritico ? 'block' : 'none';
     }
 
-    // DASHBOARD & CHART.JS
     function atualizarDashboard() {
         if(!usuarioAtual || usuarioAtual.tipo !== 'admin') return;
 
@@ -1616,7 +1675,6 @@
         });
     }
 
-    // BACKUP SEGURO
     window.fazerBackup = function() {
         let usuariosSemSenhas = {};
         for(let u in usuarios) {
@@ -1649,7 +1707,6 @@
         URL.revokeObjectURL(a.href);
     };
 
-    // QR CODE MENU DIGITAL
     window.abrirModalQRMenu = function() {
         document.getElementById('modalQRMenu').style.display = 'block';
         let urlSite = window.location.href;
@@ -1659,7 +1716,6 @@
     };
     window.fecharModalQRMenu = function() { document.getElementById('modalQRMenu').style.display = 'none'; };
 
-    // EXPORTAR EXCEL
     window.exportarVendasExcel = function() {
         let dadosExcel = historico.map(item => ({
             "Empresa": codigoEmpresa,
@@ -1695,7 +1751,6 @@
         XLSX.writeFile(wb, `Stock_${codigoEmpresa}_${Date.now()}.xlsx`);
     };
 
-    // DEFINIÇÕES & DADOS DA EMPRESA
     function preencherCamposEmpresaModal() {
         if (document.getElementById('cfgNomeEmpresa')) {
             document.getElementById('cfgNomeEmpresa').value = dadosEmpresa.nome || '';
