@@ -536,21 +536,26 @@
     </div>
 </div>
 
-<!-- MODAL REDEFINIR PALAVRA-PASSE (TELA LOGIN) -->
+<!-- MODAL REDEFINIR PALAVRA-PASSE SEGURA (TELA LOGIN) -->
 <div id="modalResetSenha" class="modal">
     <div class="modal-content">
         <span class="close-modal" onclick="fecharModalResetSenha()">&times;</span>
-        <h3>🔑 Redefinir Palavra-Passe</h3>
-        <p style="font-size: 0.9em; color: #555;">Introduza o nome de utilizador para redefinir a palavra-passe no sistema.</p>
+        <h3>🔑 Redefinir Palavra-Passe com Validação</h3>
+        <p style="font-size: 0.85em; color: #555;">Por motivos de segurança, introduza o NUIT da Empresa ou a Chave Mestra para autorizar a redefinição.</p>
+        
         <div class="form-group">
-            <label>Nome de Utilizador</label>
+            <label>Nome do Utilizador a Alterar</label>
             <input type="text" id="resetUsuarioNome" placeholder="Ex: joao, maria, admin">
+        </div>
+        <div class="form-group">
+            <label>NUIT da Empresa OU Chave Mestra de Recuperação</label>
+            <input type="password" id="resetChaveAutorizacao" placeholder="Digite o NUIT ou a Chave Mestra">
         </div>
         <div class="form-group">
             <label>Nova Palavra-Passe Desejada</label>
             <input type="password" id="resetNovaSenha" placeholder="Digite a nova palavra-passe">
         </div>
-        <button class="btn-success" onclick="solicitarRedefinicaoSenha()">Confirmar Redefinição</button>
+        <button class="btn-success" onclick="solicitarRedefinicaoSenhaSegura()">🔐 Autorizar & Redefinir Senha</button>
         <button class="btn-dark btn-sm" style="margin-top:8px;" onclick="fecharModalResetSenha()">Cancelar</button>
     </div>
 </div>
@@ -573,14 +578,14 @@
         <h3>⚙️ Definições do Sistema</h3>
         
         <div id="seccaoEmpresaAdmin" style="display:none; background:#eef7ff; padding:12px; border-radius:6px; margin-bottom:15px; border:1px solid #b6e0fe;">
-            <h4 style="margin-top:0; color:var(--primary);">🏢 Dados do Restaurante / NUIT</h4>
+            <h4 style="margin-top:0; color:var(--primary);">🏢 Dados do Restaurante & Chave Mestra</h4>
             <div class="form-group">
                 <label>Nome do Restaurante</label>
                 <input type="text" id="cfgNomeEmpresa" placeholder="Ex: Restaurante Sabores de Maputo">
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label>NUIT</label>
+                    <label>NUIT (Usado também para validação)</label>
                     <input type="text" id="cfgNuit" placeholder="Ex: 123456789">
                 </div>
                 <div class="form-group">
@@ -595,6 +600,10 @@
             <div class="form-group">
                 <label>Slogan / Mensagem no Rodapé do Recibo</label>
                 <input type="text" id="cfgSlogan" placeholder="Ex: Obrigado pela preferência! Volte sempre.">
+            </div>
+            <div class="form-group">
+                <label style="color:var(--danger);">🔑 Chave Mestra Secreta de Recuperação (Para Emergências)</label>
+                <input type="text" id="cfgChaveMestra" placeholder="Ex: REST-8921-KEY">
             </div>
             <button class="btn-primary btn-sm" onclick="guardarDadosEmpresa()">💾 Guardar Dados da Empresa</button>
         </div>
@@ -667,7 +676,7 @@
     for(let i=1; i<=10; i++) mesas[`Mesa ${i}`] = [];
 
     let caixaEstado = { aberto: false, fundo: 0, dataAbertura: null };
-    let dadosEmpresa = { nome: "RESTAURANTE", nuit: "", endereco: "", telefone: "", slogan: "Obrigado pela preferência!" };
+    let dadosEmpresa = { nome: "RESTAURANTE", nuit: "", endereco: "", telefone: "", slogan: "Obrigado pela preferência!", chaveMestra: "1234" };
     let usuarioAtual = null;
     let mesaSelecionada = "Balcão";
     let chartInstance = null;
@@ -708,7 +717,10 @@
     });
 
     onSnapshot(doc(db, "sistema", "empresa"), (docSnap) => {
-        if (docSnap.exists()) dadosEmpresa = docSnap.data();
+        if (docSnap.exists()) {
+            dadosEmpresa = docSnap.data();
+            preencherCamposEmpresaModal();
+        }
     });
 
     function verificarEstadoInicial() {
@@ -746,7 +758,7 @@
         document.getElementById('telaLogin').style.display = 'block';
     };
 
-    // REDEFINIR PALAVRA-PASSE
+    // REDEFINIR PALAVRA-PASSE COM VALIDAÇÃO SEGURA (NUIT / CHAVE MESTRA)
     window.abrirModalResetSenha = function() {
         document.getElementById('modalResetSenha').style.display = 'block';
     };
@@ -754,22 +766,34 @@
     window.fecharModalResetSenha = function() {
         document.getElementById('modalResetSenha').style.display = 'none';
         document.getElementById('resetUsuarioNome').value = '';
+        document.getElementById('resetChaveAutorizacao').value = '';
         document.getElementById('resetNovaSenha').value = '';
     };
 
-    window.solicitarRedefinicaoSenha = async function() {
+    window.solicitarRedefinicaoSenhaSegura = async function() {
         let u = document.getElementById('resetUsuarioNome').value.trim().toLowerCase();
+        let chaveEntrada = document.getElementById('resetChaveAutorizacao').value.trim();
         let novaP = document.getElementById('resetNovaSenha').value;
 
-        if (!u || !novaP) return alert("Por favor, preencha o nome de utilizador e a nova palavra-passe.");
+        if (!u || !chaveEntrada || !novaP) return alert("Preencha todos os campos do formulário.");
 
-        if (usuarios[u]) {
+        if (!usuarios[u]) {
+            return alert("Utilizador não encontrado no sistema.");
+        }
+
+        // Validação de Segurança: compara a chave introduzida com o NUIT ou a Chave Mestra
+        let nuitCadastrado = (dadosEmpresa.nuit || "").trim();
+        let chaveMestraCadastrada = (dadosEmpresa.chaveMestra || "1234").trim();
+
+        let eValido = (chaveEntrada === nuitCadastrado && nuitCadastrado !== "") || (chaveEntrada === chaveMestraCadastrada);
+
+        if (eValido) {
             usuarios[u].senha = novaP;
             await setDoc(doc(db, "sistema", "usuarios"), usuarios);
-            alert(`A palavra-passe do utilizador '${u.toUpperCase()}' foi redefinida com sucesso! Pode agora fazer login.`);
+            alert(`A palavra-passe do utilizador '${u.toUpperCase()}' foi redefinida com sucesso! Pode entrar com a nova senha.`);
             fecharModalResetSenha();
         } else {
-            alert("Utilizador não encontrado no sistema. Verifique o nome inserido.");
+            alert("A Chave Mestra ou NUIT da Empresa introduzido está incorreto! Autorização negada.");
         }
     };
 
@@ -818,6 +842,16 @@
         }
     };
 
+    window.redefinirSenhaDiretaAdmin = async function(u) {
+        let novaS = prompt(`Digite a nova palavra-passe para o perfil '${u.toUpperCase()}':`);
+        if(novaS && novaS.trim() !== "") {
+            usuarios[u].senha = novaS.trim();
+            await setDoc(doc(db, "sistema", "usuarios"), usuarios);
+            alert(`Palavra-passe de ${u.toUpperCase()} alterada com sucesso!`);
+            renderizarUsuarios();
+        }
+    };
+
     function renderizarUsuarios() {
         let tbody = document.getElementById('corpoTabelaPerfis');
         if(!tbody) return;
@@ -837,6 +871,7 @@
                 <td><b>${numVendas}</b> vendas</td>
                 <td>
                     <button class="btn-primary btn-sm" onclick="verHistoricoPerfil('${u}')">🔍 Ver Vendas</button>
+                    <button class="btn-warning btn-sm" onclick="redefinirSenhaDiretaAdmin('${u}')">🔑 Alterar Senha</button>
                     ${u !== 'admin' ? `<button class="btn-saida btn-sm" onclick="apagarUsuario('${u}')">Eliminar</button>` : ''}
                 </td>
             </tr>`;
@@ -1361,11 +1396,11 @@
         });
     }
 
-    // EXPORTAÇÃO DE BACKUP SEGURO (SEM PALAVRAS-PASSE)
+    // EXPORTAÇÃO DE BACKUP SEGURO (REMOVE AUTOMATICAMENTE TODAS AS PALAVRAS-PASSE)
     window.fazerBackup = function() {
         let usuariosSemSenhas = {};
         for(let u in usuarios) {
-            usuariosSemSenhas[u] = { tipo: usuarios[u].tipo };
+            usuariosSemSenhas[u] = { tipo: usuarios[u].tipo }; // Remove explicitamente a propriedade 'senha'
         }
 
         let backupData = {
@@ -1374,7 +1409,13 @@
             historico,
             clientes,
             despesas,
-            dadosEmpresa,
+            dadosEmpresa: {
+                nome: dadosEmpresa.nome,
+                nuit: dadosEmpresa.nuit,
+                endereco: dadosEmpresa.endereco,
+                telefone: dadosEmpresa.telefone,
+                slogan: dadosEmpresa.slogan
+            },
             dataBackup: new Date().toLocaleString('pt-MZ')
         };
 
@@ -1430,8 +1471,22 @@
         XLSX.writeFile(wb, `Stock_${Date.now()}.xlsx`);
     };
 
-    // DEFINIÇÕES
-    window.abrirModalDefinicoes = function() { document.getElementById('modalDefinicoes').style.display = 'block'; };
+    // DEFINIÇÕES & DADOS DA EMPRESA
+    function preencherCamposEmpresaModal() {
+        if (document.getElementById('cfgNomeEmpresa')) {
+            document.getElementById('cfgNomeEmpresa').value = dadosEmpresa.nome || '';
+            document.getElementById('cfgNuit').value = dadosEmpresa.nuit || '';
+            document.getElementById('cfgTelefone').value = dadosEmpresa.telefone || '';
+            document.getElementById('cfgEndereco').value = dadosEmpresa.endereco || '';
+            document.getElementById('cfgSlogan').value = dadosEmpresa.slogan || '';
+            document.getElementById('cfgChaveMestra').value = dadosEmpresa.chaveMestra || '1234';
+        }
+    }
+
+    window.abrirModalDefinicoes = function() {
+        document.getElementById('modalDefinicoes').style.display = 'block';
+        preencherCamposEmpresaModal();
+    };
     window.fecharModalDefinicoes = function() { document.getElementById('modalDefinicoes').style.display = 'none'; };
     
     window.guardarDadosEmpresa = async function() {
@@ -1440,7 +1495,8 @@
             nuit: document.getElementById('cfgNuit').value.trim(),
             telefone: document.getElementById('cfgTelefone').value.trim(),
             endereco: document.getElementById('cfgEndereco').value.trim(),
-            slogan: document.getElementById('cfgSlogan').value.trim()
+            slogan: document.getElementById('cfgSlogan').value.trim(),
+            chaveMestra: document.getElementById('cfgChaveMestra').value.trim() || '1234'
         };
         await setDoc(doc(db, "sistema", "empresa"), dadosEmpresa);
         alert("Dados salvos com sucesso!");
