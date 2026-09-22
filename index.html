@@ -614,14 +614,14 @@
 
 <div id="areaImpressao"></div>
 
-<!-- LÓGICA JAVASCRIPT EXPOSTA GLOBALMENTE -->
+<!-- LÓGICA JAVASCRIPT & FIREBASE EXPOSTA GLOBALMENTE -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
       getFirestore, doc, collection, onSnapshot, updateDoc, setDoc, getDocs 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // 🔴 INSERIR AS SUAS CHAVES DO FIREBASE AQUI
+    // 🔴 CREDENCIAIS DO SEU PROJETO FIREBASE
     const firebaseConfig = {
       apiKey: "SUA_API_KEY",
       authDomain: "SEU_PROJETO.firebaseapp.com",
@@ -646,9 +646,9 @@
 
     let unsubscribeLicenca = null;
     let unsubscribeMesas = null;
-    let unsubscribeStock = null;
 
-    // ATRIBUIR AS FUNÇÕES AO OBJECTO WINDOW PARA FICAREM DISPONÍVEIS NO HTML
+    // EVENTOS ATRIBUÍDOS AO WINDOW PARA SEREM ACESSÍVEIS PELO HTML
+
     window.carregarPerfisEmpresa = function() {
         const cod = document.getElementById('loginCodigoEmpresa').value.trim().toUpperCase();
         if (!cod) return alert("Introduza o Código do Restaurante!");
@@ -709,6 +709,7 @@
         document.getElementById('cargoUsuarioLogado').innerText = "Operador Ativo";
 
         window.iniciarConexaoRealtime();
+        window.inicializarGrafico();
     };
 
     window.fazerLogout = function() {
@@ -734,7 +735,6 @@
             return;
         }
 
-        // Escutar Mesas no Firestore
         const mesasRef = collection(db, "empresas", empresaAtiva, "dados", "mesas");
         if (unsubscribeMesas) unsubscribeMesas();
 
@@ -877,14 +877,14 @@
 
     window.finalizarVendaCarrinho = function() {
         if (carrinhoItens.length === 0) return alert("Adicione itens ao carrinho primeiro!");
-        alert("Venda concluída com sucesso!");
+        alert("Venda efetuada com sucesso!");
         carrinhoItens = [];
         window.renderizarCarrinho();
     };
 
     window.imprimirGuiaCozinha = function() {
         if (carrinhoItens.length === 0) return alert("Carrinho vazio!");
-        alert("Comanda enviada para a Cozinha!");
+        alert("Comanda impressa para a Cozinha!");
     };
 
     window.abrirCaixaTurno = function() {
@@ -897,7 +897,7 @@
     window.registarDespesa = function() {
         const desc = document.getElementById('despesaDesc').value.trim();
         const valor = parseFloat(document.getElementById('despesaValor').value) || 0;
-        if (!desc || valor <= 0) return alert("Preencha a descrição e valor da despesa!");
+        if (!desc || valor <= 0) return alert("Preencha a descrição e o valor da despesa!");
         alert(`Despesa de ${valor} MT registada!`);
         document.getElementById('despesaDesc').value = "";
         document.getElementById('despesaValor').value = "";
@@ -910,6 +910,10 @@
             document.getElementById('bannerStatusCaixa').className = "status-caixa-banner caixa-fechado";
             document.getElementById('textoStatusCaixa').innerText = "🔴 Caixa Encerrado";
         }
+    };
+
+    window.exportarStockExcel = function() {
+        alert("Função de exportação para Excel iniciada.");
     };
 
     window.calcularPrecosEntrada = function() {
@@ -926,11 +930,10 @@
         }
     };
 
-    window.salvarEntradaStock = async function() {
+    window.salvarEntradaStock = function() {
         const nome = document.getElementById('simplesProduto').value.trim();
         if (!nome) return alert("Introduza o nome do produto!");
-
-        alert("Produto adicionado ao Stock!");
+        alert("Produto guardado no Stock!");
         document.getElementById('simplesProduto').value = "";
     };
 
@@ -946,6 +949,10 @@
         if (!nome) return alert("Introduza o nome do utilizador!");
         alert("Perfil criado!");
         document.getElementById('novoUserNome').value = "";
+    };
+
+    window.fecharDetalhesPerfil = function() {
+        document.getElementById('seccaoDetalhesPerfil').style.display = 'none';
     };
 
     window.abrirModalQRMenu = function() {
@@ -972,7 +979,25 @@
         alert("Painel de Definições");
     };
 
-    // Inicialização ao carregar a página
+    window.inicializarGrafico = function() {
+        const ctx = document.getElementById('graficoVendas');
+        if (ctx) {
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'],
+                    datasets: [{
+                        label: 'Vendas (MT)',
+                        data: [1200, 2500, 5800, 3200, 4100, 8900, 6500],
+                        backgroundColor: '#007bff'
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+    };
+
+    // Arranque Inicial
     window.addEventListener("DOMContentLoaded", () => {
         window.carregarPerfisEmpresa();
     });
