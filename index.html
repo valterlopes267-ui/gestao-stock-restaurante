@@ -52,6 +52,13 @@
         .btn-dark { background-color: #555; }
         .btn-sm { padding: 6px 12px; font-size: 12px; width: auto; margin: 0; }
 
+        /* Perfis no Login */
+        .grid-perfis-login { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+        .card-perfil-login { background: #f8f9fa; border: 2px solid #e9ecef; padding: 12px; border-radius: 12px; width: 100px; text-align: center; cursor: pointer; transition: 0.2s; }
+        .card-perfil-login:hover, .card-perfil-login.ativo { border-color: var(--primary); background: #e7f5ff; transform: translateY(-2px); }
+        .avatar-img { width: 65px; height: 65px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); margin-bottom: 6px; background: #ddd; }
+        .avatar-placeholder { width: 65px; height: 65px; border-radius: 50%; background: #007bff; color: white; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: bold; margin: 0 auto 6px auto; }
+
         /* Status do Caixa Banner */
         .status-caixa-banner { padding: 12px; border-radius: 6px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
         .caixa-aberto { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
@@ -93,7 +100,7 @@
         .modal-content { background: white; max-width: 550px; margin: 5% auto; padding: 20px; border-radius: 8px; position: relative; }
         .close-modal { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; }
 
-        /* Estilos de Impressão (Recibo e Cozinha) */
+        /* Estilos de Impressão */
         #areaImpressao { display: none; }
         @media print {
             body * { visibility: hidden; }
@@ -112,21 +119,26 @@
 <div class="container">
     <div id="loadingNuvem" style="text-align:center; padding:20px; font-weight:bold; color:var(--primary);">A sincronizar com a nuvem...</div>
 
-    <!-- ECRÃ DE LOGIN -->
-    <div id="telaLogin" style="display:none;">
-        <h2>Entrar no Sistema</h2>
+    <!-- ECRÃ DE LOGIN COM SELEÇÃO DE PERFIS -->
+    <div id="telaLogin" style="display:none; max-width:480px; margin:0 auto;">
+        <h2 style="text-align:center;">Entrar no Sistema</h2>
+        <p style="text-align:center; font-size:0.85em; color:#666;">Selecione o seu perfil para entrar:</p>
+        
+        <!-- Lista de Perfis Visuais -->
+        <div id="gridPerfisLogin" class="grid-perfis-login"></div>
+
         <div class="form-group">
-            <label>Utilizador</label>
-            <input type="text" id="loginUser" placeholder="Nome de utilizador">
+            <label>Utilizador Selecionado</label>
+            <input type="text" id="loginUser" placeholder="Selecione um perfil acima ou digite">
         </div>
         <div class="form-group">
             <label>Palavra-passe</label>
-            <input type="password" id="loginPass" placeholder="Palavra-passe">
+            <input type="password" id="loginPass" placeholder="Digite a sua palavra-passe">
         </div>
-        <button onclick="fazerLogin()">Entrar</button>
+        <button onclick="fazerLogin()" style="margin-top:10px;">Entrar no Sistema</button>
         
-        <p style="text-align:center; margin-top:15px;">
-            <a href="#" style="color:var(--primary); font-size:0.9em; text-decoration:none;" onclick="abrirModalResetSenha()">Esqueceu-se da palavra-passe?</a>
+        <p style="text-align:center; margin-top:20px;">
+            <a href="#" style="color:var(--primary); font-size:0.85em; text-decoration:none;" onclick="abrirModalResetSenha()">Esqueceu-se da palavra-passe? (Apenas com Chave Mestra)</a>
         </p>
     </div>
 
@@ -134,12 +146,16 @@
     <div id="telaSistema" style="display:none;">
         
         <div class="header-usuario">
-            <div>
-                <strong>Sessão Ativa: <span id="nomeUsuarioLogado" style="color:var(--primary); text-transform:uppercase;"></span></strong>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div id="headerAvatarBox"></div>
+                <div>
+                    <strong>Sessão Ativa: <span id="nomeUsuarioLogado" style="color:var(--primary); text-transform:uppercase;"></span></strong><br>
+                    <small id="cargoUsuarioLogado" style="color:#666;"></small>
+                </div>
             </div>
             <div style="display:flex; gap:8px; align-items:center;">
                 <button class="btn-purple btn-sm" onclick="abrirModalQRMenu()">📱 QR Menu Digital</button>
-                <button id="btnDefinicoes" class="btn-warning btn-sm" onclick="abrirModalDefinicoes()">⚙️ Definições & NUIT</button>
+                <button id="btnDefinicoes" class="btn-warning btn-sm" onclick="abrirModalDefinicoes()">⚙️ Definições & Chave Mestra</button>
                 <button class="btn-dark btn-sm" onclick="fazerLogout()">Sair</button>
             </div>
         </div>
@@ -152,7 +168,7 @@
 
         <!-- ALERTA DE STOCK MÍNIMO -->
         <div id="boxAlertaStockGlobal" class="alerta-stock-box">
-            <strong>⚠️ Alerta de Stock Crítico:</strong> Existem produtos com quantidade abaixo do limite mínimo! Consulte a aba de Stock.
+            <strong>⚠️ Alerta de Stock Crítico:</strong> Existem produtos com quantidade abaixo do limite mínimo!
         </div>
 
         <!-- MENU DE ABAS -->
@@ -411,12 +427,12 @@
             </div>
         </div>
 
-        <!-- ================= ABA 5: GESTÃO DE PERFIS (ADMIN) ================= -->
+        <!-- ================= ABA 5: GESTÃO DE PERFIS COM FOTO (ADMIN) ================= -->
         <div id="abaUsuarios" class="tab-content col-admin">
-            <h2>Gestão de Perfis & Desempenho de Vendas</h2>
+            <h2>Gestão de Perfis & Fotos dos Utilizadores</h2>
 
             <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:20px;">
-                <h4>Criar Novo Perfil de Acesso</h4>
+                <h4>Criar Novo Perfil com Foto</h4>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Nome do Utilizador</label>
@@ -433,22 +449,29 @@
                             <option value="admin">⚙️ Administrador (Acesso Total)</option>
                         </select>
                     </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Foto do Perfil (Opcional)</label>
+                        <input type="file" id="novoUserFoto" accept="image/*">
+                    </div>
                     <div class="form-group" style="align-self:flex-end;">
                         <button class="btn-success" onclick="cadastrarUsuario()">+ Criar Perfil</button>
                     </div>
                 </div>
             </div>
 
-            <h4>📊 Desempenho de Vendas por Perfil</h4>
+            <h4>📊 Perfis Ativos e Ações</h4>
             <div class="table-responsive" style="margin-bottom:25px;">
                 <table>
                     <thead>
                         <tr>
+                            <th>Foto</th>
                             <th>Utilizador</th>
-                            <th>Tipo de Permissão</th>
+                            <th>Permissão</th>
                             <th>Total Vendido (MT)</th>
-                            <th>Nº de Vendas</th>
-                            <th>Ações</th>
+                            <th>Nº Vendas</th>
+                            <th>Ações do Administrador</th>
                         </tr>
                     </thead>
                     <tbody id="corpoTabelaPerfis"></tbody>
@@ -536,26 +559,26 @@
     </div>
 </div>
 
-<!-- MODAL REDEFINIR PALAVRA-PASSE SEGURA (TELA LOGIN) -->
+<!-- MODAL REDEFINIR PALAVRA-PASSE EXCLUSIVAMENTE VIA CHAVE MESTRA -->
 <div id="modalResetSenha" class="modal">
     <div class="modal-content">
         <span class="close-modal" onclick="fecharModalResetSenha()">&times;</span>
-        <h3>🔑 Redefinir Palavra-Passe com Validação</h3>
-        <p style="font-size: 0.85em; color: #555;">Por motivos de segurança, introduza o NUIT da Empresa ou a Chave Mestra para autorizar a redefinição.</p>
+        <h3>🔑 Redefinir Senha com Chave Mestra</h3>
+        <p style="font-size: 0.85em; color: #555;">Por motivos de segurança, apenas a <b>Chave Mestra do Administrador</b> pode autorizar a redefinição de palavra-passe.</p>
         
         <div class="form-group">
-            <label>Nome do Utilizador a Alterar</label>
+            <label>Nome do Utilizador</label>
             <input type="text" id="resetUsuarioNome" placeholder="Ex: joao, maria, admin">
         </div>
         <div class="form-group">
-            <label>NUIT da Empresa OU Chave Mestra de Recuperação</label>
-            <input type="password" id="resetChaveAutorizacao" placeholder="Digite o NUIT ou a Chave Mestra">
+            <label>Chave Mestra do Administrador</label>
+            <input type="password" id="resetChaveMestraInput" placeholder="Insira a Chave Mestra">
         </div>
         <div class="form-group">
-            <label>Nova Palavra-Passe Desejada</label>
+            <label>Nova Palavra-Passe</label>
             <input type="password" id="resetNovaSenha" placeholder="Digite a nova palavra-passe">
         </div>
-        <button class="btn-success" onclick="solicitarRedefinicaoSenhaSegura()">🔐 Autorizar & Redefinir Senha</button>
+        <button class="btn-success" onclick="solicitarRedefinicaoSenhaChaveMestra()">🔐 Autorizar e Guardar Nova Senha</button>
         <button class="btn-dark btn-sm" style="margin-top:8px;" onclick="fecharModalResetSenha()">Cancelar</button>
     </div>
 </div>
@@ -585,7 +608,7 @@
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label>NUIT (Usado também para validação)</label>
+                    <label>NUIT</label>
                     <input type="text" id="cfgNuit" placeholder="Ex: 123456789">
                 </div>
                 <div class="form-group">
@@ -602,7 +625,7 @@
                 <input type="text" id="cfgSlogan" placeholder="Ex: Obrigado pela preferência! Volte sempre.">
             </div>
             <div class="form-group">
-                <label style="color:var(--danger);">🔑 Chave Mestra Secreta de Recuperação (Para Emergências)</label>
+                <label style="color:var(--danger); font-weight:bold;">🔑 Chave Mestra Secreta de Recuperação (Apenas Administrador)</label>
                 <input type="text" id="cfgChaveMestra" placeholder="Ex: REST-8921-KEY">
             </div>
             <button class="btn-primary btn-sm" onclick="guardarDadosEmpresa()">💾 Guardar Dados da Empresa</button>
@@ -683,8 +706,9 @@
 
     // Escuta Firebase em Tempo Real
     onSnapshot(doc(db, "sistema", "usuarios"), (docSnap) => {
-        usuarios = docSnap.exists() ? docSnap.data() : { "admin": { senha: "123", tipo: "admin" } };
+        usuarios = docSnap.exists() ? docSnap.data() : { "admin": { senha: "123", tipo: "admin", foto: "" } };
         verificarEstadoInicial();
+        renderizarPerfisLogin();
         if (usuarioAtual && usuarioAtual.tipo === 'admin') renderizarUsuarios();
     });
 
@@ -728,14 +752,51 @@
         if (!usuarioAtual) document.getElementById('telaLogin').style.display = 'block';
     }
 
+    // RENDERIZAR PERFIS NA PÁGINA DE ENTRADA (LOGIN)
+    function renderizarPerfisLogin() {
+        let container = document.getElementById('gridPerfisLogin');
+        if (!container) return;
+        container.innerHTML = '';
+
+        for (let u in usuarios) {
+            let uObj = usuarios[u];
+            let avatarHtml = uObj.foto 
+                ? `<img src="${uObj.foto}" class="avatar-img" alt="${u}">` 
+                : `<div class="avatar-placeholder">${u.charAt(0).toUpperCase()}</div>`;
+
+            let card = document.createElement('div');
+            card.className = 'card-perfil-login';
+            card.onclick = () => selecionarPerfilLogin(u);
+            card.innerHTML = `${avatarHtml}<div style="font-weight:bold; font-size:0.85em; text-transform:uppercase; overflow:hidden; text-overflow:ellipsis;">${u}</div>`;
+            container.appendChild(card);
+        }
+    }
+
+    window.selecionarPerfilLogin = function(u) {
+        document.getElementById('loginUser').value = u;
+        document.getElementById('loginPass').focus();
+        
+        document.querySelectorAll('.card-perfil-login').forEach(c => c.classList.remove('ativo'));
+        if (event && event.currentTarget) event.currentTarget.classList.add('ativo');
+    };
+
     // LOGIN & LOGOUT
     window.fazerLogin = function() {
         let u = document.getElementById('loginUser').value.trim().toLowerCase();
         let p = document.getElementById('loginPass').value;
 
         if (usuarios[u] && usuarios[u].senha === p) {
-            usuarioAtual = { nome: u, tipo: usuarios[u].tipo };
+            usuarioAtual = { nome: u, tipo: usuarios[u].tipo, foto: usuarios[u].foto || "" };
             document.getElementById('nomeUsuarioLogado').innerText = u;
+            document.getElementById('cargoUsuarioLogado').innerText = usuarios[u].tipo === 'admin' ? 'Administrador' : 'Operador de Caixa';
+            
+            let headerAvatar = document.getElementById('headerAvatarBox');
+            if(usuarioAtual.foto) {
+                headerAvatar.innerHTML = `<img src="${usuarioAtual.foto}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">`;
+            } else {
+                headerAvatar.innerHTML = `<div style="width:40px; height:40px; border-radius:50%; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center; font-weight:bold;">${u.charAt(0).toUpperCase()}</div>`;
+            }
+
             document.getElementById('telaLogin').style.display = 'none';
             document.getElementById('telaSistema').style.display = 'block';
             
@@ -748,7 +809,7 @@
             atualizarDashboard();
             if(usuarioAtual.tipo === 'admin') renderizarUsuarios();
         } else {
-            alert("Credenciais inválidas!");
+            alert("Credenciais inválidas! Verifique o utilizador e a palavra-passe.");
         }
     };
 
@@ -756,9 +817,10 @@
         usuarioAtual = null;
         document.getElementById('telaSistema').style.display = 'none';
         document.getElementById('telaLogin').style.display = 'block';
+        document.getElementById('loginPass').value = '';
     };
 
-    // REDEFINIR PALAVRA-PASSE COM VALIDAÇÃO SEGURA (NUIT / CHAVE MESTRA)
+    // REDEFINIR PALAVRA-PASSE SEGURA (EXCLUSIVAMENTE COM CHAVE MESTRA)
     window.abrirModalResetSenha = function() {
         document.getElementById('modalResetSenha').style.display = 'block';
     };
@@ -766,13 +828,13 @@
     window.fecharModalResetSenha = function() {
         document.getElementById('modalResetSenha').style.display = 'none';
         document.getElementById('resetUsuarioNome').value = '';
-        document.getElementById('resetChaveAutorizacao').value = '';
+        document.getElementById('resetChaveMestraInput').value = '';
         document.getElementById('resetNovaSenha').value = '';
     };
 
-    window.solicitarRedefinicaoSenhaSegura = async function() {
+    window.solicitarRedefinicaoSenhaChaveMestra = async function() {
         let u = document.getElementById('resetUsuarioNome').value.trim().toLowerCase();
-        let chaveEntrada = document.getElementById('resetChaveAutorizacao').value.trim();
+        let chaveEntrada = document.getElementById('resetChaveMestraInput').value.trim();
         let novaP = document.getElementById('resetNovaSenha').value;
 
         if (!u || !chaveEntrada || !novaP) return alert("Preencha todos os campos do formulário.");
@@ -781,19 +843,15 @@
             return alert("Utilizador não encontrado no sistema.");
         }
 
-        // Validação de Segurança: compara a chave introduzida com o NUIT ou a Chave Mestra
-        let nuitCadastrado = (dadosEmpresa.nuit || "").trim();
         let chaveMestraCadastrada = (dadosEmpresa.chaveMestra || "1234").trim();
 
-        let eValido = (chaveEntrada === nuitCadastrado && nuitCadastrado !== "") || (chaveEntrada === chaveMestraCadastrada);
-
-        if (eValido) {
+        if (chaveEntrada === chaveMestraCadastrada) {
             usuarios[u].senha = novaP;
             await setDoc(doc(db, "sistema", "usuarios"), usuarios);
-            alert(`A palavra-passe do utilizador '${u.toUpperCase()}' foi redefinida com sucesso! Pode entrar com a nova senha.`);
+            alert(`A palavra-passe do utilizador '${u.toUpperCase()}' foi alterada com sucesso!`);
             fecharModalResetSenha();
         } else {
-            alert("A Chave Mestra ou NUIT da Empresa introduzido está incorreto! Autorização negada.");
+            alert("Chave Mestra Incorreta! Apenas o Administrador pode redefinir a palavra-passe.");
         }
     };
 
@@ -815,22 +873,45 @@
         if(abaId === 'abaUsuarios' && usuarioAtual.tipo === 'admin') renderizarUsuarios();
     };
 
-    // GESTÃO DE PERFIS & UTILIZADORES
-    window.cadastrarUsuario = async function() {
+    // GESTÃO DE PERFIS, FOTOS & UTILIZADORES (ADMIN)
+    function processarFotoAvatar(file, callback) {
+        if (!file) return callback("");
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            let img = new Image();
+            img.onload = function() {
+                let canvas = document.createElement('canvas');
+                let ctx = canvas.getContext('2d');
+                canvas.width = 120;
+                canvas.height = 120;
+                ctx.drawImage(img, 0, 0, 120, 120);
+                callback(canvas.toDataURL('image/jpeg', 0.8));
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    window.cadastrarUsuario = function() {
         let u = document.getElementById('novoUserNome').value.trim().toLowerCase();
         let p = document.getElementById('novoUserSenha').value;
         let t = document.getElementById('novoUserTipo').value;
+        let fileInput = document.getElementById('novoUserFoto').files[0];
 
         if(!u || !p) return alert("Preencha o nome do utilizador e a palavra-passe!");
         if(usuarios[u]) return alert("Este nome de utilizador já existe!");
 
-        usuarios[u] = { senha: p, tipo: t };
-        await setDoc(doc(db, "sistema", "usuarios"), usuarios);
-        
-        document.getElementById('novoUserNome').value = '';
-        document.getElementById('novoUserSenha').value = '';
-        alert(`Perfil '${u}' criado com sucesso!`);
-        renderizarUsuarios();
+        processarFotoAvatar(fileInput, async function(fotoBase64) {
+            usuarios[u] = { senha: p, tipo: t, foto: fotoBase64 };
+            await setDoc(doc(db, "sistema", "usuarios"), usuarios);
+            
+            document.getElementById('novoUserNome').value = '';
+            document.getElementById('novoUserSenha').value = '';
+            document.getElementById('novoUserFoto').value = '';
+            alert(`Perfil '${u}' criado com sucesso!`);
+            renderizarUsuarios();
+            renderizarPerfisLogin();
+        });
     };
 
     window.apagarUsuario = async function(u) {
@@ -839,17 +920,41 @@
             delete usuarios[u];
             await setDoc(doc(db, "sistema", "usuarios"), usuarios);
             renderizarUsuarios();
+            renderizarPerfisLogin();
         }
     };
 
+    // EXCLUSIVO DO ADMIN: REDEFINIR SENHA DIRETA
     window.redefinirSenhaDiretaAdmin = async function(u) {
-        let novaS = prompt(`Digite a nova palavra-passe para o perfil '${u.toUpperCase()}':`);
+        if(usuarioAtual.tipo !== 'admin') return alert("Apenas o Administrador pode redefinir senhas!");
+        let novaS = prompt(`ADMINISTRADOR: Digite a nova palavra-passe para o perfil '${u.toUpperCase()}':`);
         if(novaS && novaS.trim() !== "") {
             usuarios[u].senha = novaS.trim();
             await setDoc(doc(db, "sistema", "usuarios"), usuarios);
             alert(`Palavra-passe de ${u.toUpperCase()} alterada com sucesso!`);
             renderizarUsuarios();
         }
+    };
+
+    // EXCLUSIVO DO ADMIN: ALTERAR FOTO DE PERFIL EXISTENTE
+    window.alterarFotoUsuarioAdmin = function(u) {
+        if(usuarioAtual.tipo !== 'admin') return alert("Apenas o Administrador pode alterar fotos de perfil!");
+        let input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = e => {
+            let file = e.target.files[0];
+            processarFotoAvatar(file, async function(fotoBase64) {
+                if(fotoBase64) {
+                    usuarios[u].foto = fotoBase64;
+                    await setDoc(doc(db, "sistema", "usuarios"), usuarios);
+                    alert(`Foto de perfil de '${u.toUpperCase()}' atualizada!`);
+                    renderizarUsuarios();
+                    renderizarPerfisLogin();
+                }
+            });
+        };
+        input.click();
     };
 
     function renderizarUsuarios() {
@@ -859,19 +964,24 @@
 
         for(let u in usuarios) {
             let userObj = usuarios[u];
-            
             let vendasUser = historico.filter(h => h.tipo === 'venda' && h.usuario === u);
             let totalVendido = vendasUser.reduce((acc, i) => acc + (i.totalVenda || 0), 0);
             let numVendas = vendasUser.length;
 
+            let fotoTd = userObj.foto 
+                ? `<img src="${userObj.foto}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">` 
+                : `<div style="width:40px; height:40px; border-radius:50%; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center; font-weight:bold;">${u.charAt(0).toUpperCase()}</div>`;
+
             tbody.innerHTML += `<tr>
+                <td>${fotoTd}</td>
                 <td><b style="text-transform:uppercase;">${u}</b></td>
                 <td><span class="badge" style="background:${userObj.tipo==='admin'?'var(--primary)':'#6c757d'}; color:white;">${userObj.tipo==='admin'?'Administrador':'Operador'}</span></td>
                 <td style="color:var(--success); font-weight:bold;">${totalVendido.toFixed(2)} MT</td>
                 <td><b>${numVendas}</b> vendas</td>
                 <td>
-                    <button class="btn-primary btn-sm" onclick="verHistoricoPerfil('${u}')">🔍 Ver Vendas</button>
-                    <button class="btn-warning btn-sm" onclick="redefinirSenhaDiretaAdmin('${u}')">🔑 Alterar Senha</button>
+                    <button class="btn-primary btn-sm" onclick="verHistoricoPerfil('${u}')">🔍 Vendas</button>
+                    <button class="btn-purple btn-sm" onclick="alterarFotoUsuarioAdmin('${u}')">📷 Alterar Foto</button>
+                    <button class="btn-warning btn-sm" onclick="redefinirSenhaDiretaAdmin('${u}')">🔑 Mudar Senha</button>
                     ${u !== 'admin' ? `<button class="btn-saida btn-sm" onclick="apagarUsuario('${u}')">Eliminar</button>` : ''}
                 </td>
             </tr>`;
@@ -1400,7 +1510,7 @@
     window.fazerBackup = function() {
         let usuariosSemSenhas = {};
         for(let u in usuarios) {
-            usuariosSemSenhas[u] = { tipo: usuarios[u].tipo }; // Remove explicitamente a propriedade 'senha'
+            usuariosSemSenhas[u] = { tipo: usuarios[u].tipo, foto: usuarios[u].foto || "" };
         }
 
         let backupData = {
