@@ -1,562 +1,653 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistema de Gestão Master - Salão de Mesas</title>
-  
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#d32f2f">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão Master - Restaurante Pro (SaaS)</title>
 
-  <!-- Fontes & Ícones -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Meta Tags PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#007bff">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Restaurante Pro">
+    <link rel="apple-touch-icon" href="icon-192.png">
 
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Inter', sans-serif;
-    }
+    <!-- Bibliotecas Externas (Excel, Gráficos e QR Code) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-    body {
-      background-color: #f4f6f8;
-      color: #333;
-      display: flex;
-      min-height: 100vh;
-    }
+    <style>
+        :root {
+            --primary: #007bff;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #fd7e14;
+            --purple: #6f42c1;
+            --teal: #20c997;
+            --dark: #333;
+            --light: #f4f7f6;
+        }
 
-    /* Sidebar de Navegação */
-    .sidebar {
-      width: 250px;
-      background-color: #ffffff;
-      border-right: 1px solid #e0e0e0;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--light); margin: 0; padding: 12px; color: #222; }
+        .container { max-width: 1100px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        h2, h3, h4 { margin-top: 10px; color: var(--dark); }
+        
+        /* Navegação por Abas */
+        .tabs-nav { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #dee2e6; overflow-x: auto; padding-bottom: 5px; }
+        .tab-btn { background: #e9ecef; color: #495057; border: none; padding: 10px 16px; border-radius: 6px 6px 0 0; font-weight: bold; cursor: pointer; white-space: nowrap; transition: 0.2s; }
+        .tab-btn.active { background: var(--primary); color: white; }
 
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: #d32f2f;
-    }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
 
-    .nav-menu {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
+        /* Formulários e Inputs */
+        .form-row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 180px; margin-bottom: 8px; }
+        label { display: block; margin-bottom: 4px; font-weight: 600; font-size: 0.85em; color: #555; }
+        input, select, button { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        
+        /* Botões */
+        button { background-color: var(--primary); color: white; font-weight: bold; cursor: pointer; border: none; transition: 0.2s; }
+        button:hover { opacity: 0.9; }
+        .btn-saida { background-color: var(--danger); }
+        .btn-success { background-color: var(--success); }
+        .btn-warning { background-color: var(--warning); color: white; }
+        .btn-excel { background-color: #1d6f42; color: white; }
+        .btn-purple { background-color: var(--purple); color: white; }
+        .btn-dark { background-color: #555; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; width: auto; margin: 0; }
 
-    .nav-item {
-      padding: 12px 15px;
-      border-radius: 8px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      color: #555;
-      font-weight: 500;
-      transition: background 0.2s, color 0.2s;
-    }
+        /* Perfis no Login */
+        .grid-perfis-login { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+        .card-perfil-login { background: #f8f9fa; border: 2px solid #e9ecef; padding: 12px; border-radius: 12px; width: 100px; text-align: center; cursor: pointer; transition: 0.2s; }
+        .card-perfil-login:hover, .card-perfil-login.ativo { border-color: var(--primary); background: #e7f5ff; transform: translateY(-2px); }
+        .avatar-img { width: 65px; height: 65px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); margin-bottom: 6px; background: #ddd; }
+        .avatar-placeholder { width: 65px; height: 65px; border-radius: 50%; background: #007bff; color: white; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: bold; margin: 0 auto 6px auto; }
 
-    .nav-item:hover, .nav-item.active {
-      background-color: #f0f4f9;
-      color: #1a73e8;
-    }
+        /* Status do Caixa Banner */
+        .status-caixa-banner { padding: 12px; border-radius: 6px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        .caixa-aberto { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .caixa-fechado { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
 
-    /* Contentor Principal */
-    .main-content {
-      flex: 1;
-      padding: 25px;
-      overflow-y: auto;
-    }
+        /* Resumo de Lucro e Alertas */
+        .box-calculo-lucro { background: #e7f5ff; border: 1px solid #74c0fc; padding: 12px; border-radius: 6px; margin-bottom: 15px; display: none; }
+        .alerta-stock-box { background: #fff3cd; border: 1px solid #ffeba2; color: #856404; padding: 10px; border-radius: 6px; margin-bottom: 15px; display: none; }
 
-    /* Barra Superior */
-    .top-bar {
-      background: white;
-      padding: 15px 25px;
-      border-radius: 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-      margin-bottom: 25px;
-      flex-wrap: wrap;
-      gap: 15px;
-    }
+        /* Header do Utilizador */
+        .header-usuario { display: flex; justify-content: space-between; align-items: center; background: #e9ecef; padding: 12px 18px; border-radius: 8px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
 
-    .user-info-inputs {
-      display: flex;
-      gap: 15px;
-      align-items: flex-end;
-      flex-wrap: wrap;
-    }
+        /* Cards do Dashboard */
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 15px 0; }
+        .card-stat { background: #f8f9fa; padding: 14px; border-radius: 8px; border-left: 5px solid var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
+        .card-stat.verde { border-left-color: var(--success); }
+        .card-stat.laranja { border-left-color: var(--warning); }
+        .card-stat.vermelho { border-left-color: var(--danger); }
+        .card-stat.roxo { border-left-color: var(--purple); }
+        .card-stat h4 { margin: 0 0 5px 0; font-size: 0.8em; text-transform: uppercase; color: #666; }
+        .card-stat .valor-card { font-size: 1.2em; font-weight: bold; }
 
-    .input-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
+        /* Tabelas */
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+        th, td { padding: 9px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background-color: #f1f3f5; }
 
-    .input-group label {
-      font-size: 0.75rem;
-      color: #666;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
+        /* Mesas Grid */
+        .mesas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; margin-bottom: 15px; }
+        .card-mesa { background: #e8f5e9; border: 2px solid #2e7d32; padding: 12px; border-radius: 8px; text-align: center; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .card-mesa.em_uso { background: #fff3e0; border-color: #ef6c00; color: #ef6c00; }
+        .card-mesa.ocupada { background: #ffebee; border-color: #c62828; color: #c62828; }
 
-    .input-group input {
-      padding: 8px 12px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 0.9rem;
-      outline: none;
-    }
+        /* Modais */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); overflow-y: auto; }
+        .modal-content { background: white; max-width: 550px; margin: 5% auto; padding: 20px; border-radius: 8px; position: relative; }
+        .close-modal { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; }
 
-    /* Barra de Indicadores */
-    .header-mesas {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 25px;
-      flex-wrap: wrap;
-      gap: 15px;
-    }
+        /* Estilos de Impressão */
+        #areaImpressao { display: none; }
+        @media print {
+            body * { visibility: hidden; }
+            #areaImpressao, #areaImpressao * { visibility: visible; }
+            #areaImpressao { display: block; position: absolute; left: 0; top: 0; width: 80mm; font-family: 'Courier New', Courier, monospace; font-size: 11px; padding: 5px; }
+        }
 
-    .counters {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .counter-badge {
-      padding: 8px 14px;
-      border-radius: 20px;
-      font-weight: 600;
-      font-size: 0.85rem;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .counter-total { background-color: #e0e0e0; color: #333; }
-    .counter-livre { background-color: #e8f5e9; color: #2e7d32; }
-    .counter-uso { background-color: #fff3e0; color: #ef6c00; }
-    .counter-ocupada { background-color: #ffebee; color: #c62828; }
-
-    /* Grelha de Mesas */
-    .mesas-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-      gap: 20px;
-    }
-
-    /* Cartão da Mesa */
-    .mesa-card {
-      background: white;
-      border-radius: 12px;
-      border: 2px solid #e0e0e0;
-      padding: 18px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      min-height: 170px;
-      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-    }
-
-    .mesa-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-    }
-
-    /* Estados Visuais das Mesas */
-    .mesa-card.livre { border-color: #2e7d32; }
-    .mesa-card.em_uso { border-color: #ed6c02; background-color: #fffdfa; }
-    .mesa-card.ocupada { border-color: #d32f2f; background-color: #fff9f9; }
-
-    .mesa-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .mesa-title {
-      font-size: 1.15rem;
-      font-weight: 700;
-    }
-
-    .status-badge {
-      padding: 4px 10px;
-      border-radius: 12px;
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .badge-livre { background-color: #2e7d32; color: white; }
-    .badge-em_uso { background-color: #ed6c02; color: white; }
-    .badge-ocupada { background-color: #d32f2f; color: white; }
-
-    .worker-info {
-      font-size: 0.85rem;
-      color: #555;
-      margin-top: 12px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .mesa-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-top: 1px solid #f0f0f0;
-      padding-top: 12px;
-      margin-top: 12px;
-    }
-
-    .total-price {
-      font-weight: 700;
-      font-size: 0.95rem;
-      color: #222;
-    }
-
-    .btn-acao {
-      padding: 7px 14px;
-      border: none;
-      border-radius: 6px;
-      font-weight: 600;
-      font-size: 0.8rem;
-      cursor: pointer;
-      background-color: #1a73e8;
-      color: white;
-      transition: background 0.2s;
-    }
-
-    .btn-acao:hover { background-color: #1557b0; }
-
-    /* Modal de Bloqueio por Licença Suspensa */
-    .overlay-bloqueio {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-color: rgba(0,0,0,0.88);
-      z-index: 9999;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-    }
-
-    .bloqueio-card {
-      background: white;
-      padding: 40px;
-      border-radius: 16px;
-      text-align: center;
-      max-width: 450px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-    }
-
-    .bloqueio-card i {
-      font-size: 3.8rem;
-      color: #d32f2f;
-      margin-bottom: 20px;
-    }
-
-    .bloqueio-card h2 {
-      color: #222;
-      margin-bottom: 12px;
-    }
-
-    .bloqueio-card p {
-      color: #666;
-      margin-bottom: 20px;
-      line-height: 1.5;
-      font-size: 0.95rem;
-    }
-
-    .hidden { display: none !important; }
-
-    @media (max-width: 768px) {
-      body { flex-direction: column; }
-      .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #e0e0e0; }
-    }
-  </style>
+        @media (max-width: 768px) {
+            .form-row { flex-direction: column; gap: 0; }
+            .header-usuario { flex-direction: column; align-items: stretch; }
+        }
+    </style>
 </head>
 <body>
 
-  <!-- Menu Lateral -->
-  <aside class="sidebar">
-    <div class="brand">
-      <i class="fa-solid fa-utensils"></i>
-      <span>Sistema Gestão</span>
-    </div>
-    <ul class="nav-menu">
-      <li class="nav-item active"><i class="fa-solid fa-border-all"></i> Mesas & Salão</li>
-      <li class="nav-item"><i class="fa-solid fa-receipt"></i> Pedidos</li>
-      <li class="nav-item"><i class="fa-solid fa-kitchen-set"></i> Cozinha</li>
-      <li class="nav-item"><i class="fa-solid fa-cash-register"></i> Caixa</li>
-    </ul>
-  </aside>
+<div class="container">
 
-  <!-- Conteúdo Principal -->
-  <main class="main-content">
-    
-    <!-- Barra Superior -->
-    <header class="top-bar">
-      <div>
-        <h2>Salão de Mesas</h2>
-        <small style="color:#777;">Gestão em tempo real do restaurante</small>
-      </div>
+    <!-- ECRÃ DE LOGIN MULTI-TENANT COM VERIFICAÇÃO DE LICENÇA -->
+    <div id="telaLogin" style="max-width:480px; margin:20px auto;">
+        <h2 style="text-align:center; margin-bottom:5px;">Entrar no Sistema</h2>
+        <p style="text-align:center; font-size:0.85em; color:#666; margin-top:0;">Introduza o Código da Empresa e as suas credenciais:</p>
 
-      <div class="user-info-inputs">
-        <div class="input-group">
-          <label>Código Empresa</label>
-          <input type="text" id="codigoEmpresaInput" value="SABORES01">
+        <div style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px solid #dee2e6; margin-bottom:15px;">
+            <div class="form-group">
+                <label style="color:var(--primary); font-weight:bold;">🏢 Código do Restaurante / Licença</label>
+                <input type="text" id="loginCodigoEmpresa" value="SABORES01" placeholder="Ex: BAR-MUNHUANA, SABORES01" style="text-transform:uppercase; font-weight:bold;">
+            </div>
+            <button class="btn-primary btn-sm" id="btnValidarLicenca">🔍 Validar Licença & Carregar Perfis</button>
         </div>
-        <div class="input-group">
-          <label>Atendente / Funcionário</label>
-          <input type="text" id="nomeTrabalhadorInput" value="Valter Lopes">
+
+        <!-- BANNER DE CONTA BLOQUEADA / DADOS DE PAGAMENTO M-PESA -->
+        <div id="boxContaBloqueada" style="display:none; background:#fff5f5; border:2px solid #dc3545; padding:18px; border-radius:10px; margin-bottom:15px; text-align:center;">
+            <h3 style="color:#dc3545; margin-top:0;">🔴 ACESSO SUSPENSO / LICENÇA EXPIRADA</h3>
+            <p id="textoMotivoBloqueio" style="font-size:0.9em; color:#333; margin-bottom:10px;">A subscrição deste restaurante encontra-se pendente de pagamento.</p>
+            
+            <div style="background:#fff; border:1px dashed #dc3545; padding:12px; border-radius:8px; margin:12px 0; text-align:left;">
+                <strong style="color:#007bff; display:block; margin-bottom:6px;">📱 Dados para Reativação (M-Pesa / e-Mola):</strong>
+                <div style="font-size:0.9em; line-height:1.6; color:#222;">
+                    • <b>M-Pesa:</b> 84 903 0686 (Valter Lopes)<br>
+                    • <b>e-Mola:</b> 84 903 0686 (Valter Lopes)<br>
+                    • <b>Valor da Mensalidade:</b> 1.500 MT
+                </div>
+            </div>
+            
+            <p style="font-size:0.85em; color:#555; margin-bottom:0;">
+                Após efetuar o pagamento, envie o comprovativo via WhatsApp para <b>+258 84 903 0686</b> para reativar o sistema instantaneamente.
+            </p>
         </div>
-        <button class="btn-acao" id="btnRecarregar">Conectar</button>
-      </div>
-    </header>
 
-    <!-- Resumo de Estados -->
-    <section class="header-mesas">
-      <h3>Estado das Mesas</h3>
-      <div class="counters">
-        <span class="counter-badge counter-total"><i class="fa-solid fa-list"></i> Total: <strong id="countTotal">0</strong></span>
-        <span class="counter-badge counter-livre"><i class="fa-solid fa-circle-check"></i> Livre: <strong id="countLivre">0</strong></span>
-        <span class="counter-badge counter-uso"><i class="fa-solid fa-user-gear"></i> Em Uso: <strong id="countEmUso">0</strong></span>
-        <span class="counter-badge counter-ocupada"><i class="fa-solid fa-chair"></i> Ocupada: <strong id="countOcupada">0</strong></span>
-      </div>
-      <button class="btn-acao" id="btnGerarMesasTeste" style="background-color: #2e7d32;"><i class="fa-solid fa-plus"></i> Gerar 12 Mesas</button>
-    </section>
+        <div id="seccaoPerfisEForm" style="display:none;">
+            <p style="text-align:center; font-size:0.85em; color:#666;">Selecione o seu perfil:</p>
+            <div id="gridPerfisLogin" class="grid-perfis-login"></div>
 
-    <!-- Contentor das Mesas -->
-    <section class="mesas-grid" id="containerMesas">
-      <!-- Desenhado dinamicamente via Firestore -->
-    </section>
-
-  </main>
-
-  <!-- Ecrã de Bloqueio por Licença Suspensa -->
-  <div class="overlay-bloqueio hidden" id="modalBloqueioLicenca">
-    <div class="bloqueio-card">
-      <i class="fa-solid fa-lock"></i>
-      <h2>Acesso Suspenso</h2>
-      <p>A subscrição deste restaurante encontra-se <strong>SUSPENSA</strong>. Contacte o suporte para reativar o seu acesso.</p>
+            <div class="form-group">
+                <label>Utilizador Selecionado</label>
+                <input type="text" id="loginUser" placeholder="Selecione um perfil acima ou digite">
+            </div>
+            <div class="form-group">
+                <label>Palavra-passe</label>
+                <input type="password" id="loginPass" placeholder="Digite a sua palavra-passe">
+            </div>
+            <button id="btnEntrarSistema" style="margin-top:10px;">Entrar no Sistema</button>
+        </div>
     </div>
-  </div>
 
-  <!-- Firebase SDK V10 -->
-  <script type="module">
+    <!-- ECRÃ PRINCIPAL DO SISTEMA -->
+    <div id="telaSistema" style="display:none;">
+        
+        <div class="header-usuario">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div id="headerAvatarBox"></div>
+                <div>
+                    <strong>Empresa: <span id="nomeEmpresaHeader" style="color:var(--purple); text-transform:uppercase;"></span></strong> | 
+                    Sessão: <span id="nomeUsuarioLogado" style="color:var(--primary); text-transform:uppercase;"></span><br>
+                    <small id="cargoUsuarioLogado" style="color:#666;"></small>
+                </div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <button class="btn-purple btn-sm" id="btnQRMenu">📱 QR Menu Digital</button>
+                <button id="btnDefinicoes" class="btn-warning btn-sm">⚙️ Definições</button>
+                <button class="btn-dark btn-sm" id="btnLogout">Sair</button>
+            </div>
+        </div>
+
+        <!-- BANNER DE STATUS DO CAIXA -->
+        <div id="bannerStatusCaixa" class="status-caixa-banner caixa-fechado">
+            <span id="textoStatusCaixa">🔴 Caixa Encerrado</span>
+            <button id="btnAcaoCaixaHeader" class="btn-success btn-sm">Abrir Caixa</button>
+        </div>
+
+        <!-- ALERTA DE STOCK MÍNIMO -->
+        <div id="boxAlertaStockGlobal" class="alerta-stock-box">
+            <strong>⚠️ Alerta de Stock Crítico:</strong> Existem produtos com quantidade abaixo do limite mínimo!
+        </div>
+
+        <!-- MENU DE ABAS -->
+        <div class="tabs-nav">
+            <button class="tab-btn active" data-aba="abaVendas">🛒 Balcão / Mesas</button>
+            <button class="tab-btn" data-aba="abaCaixa">💵 Caixa & Despesas</button>
+            <button class="tab-btn" data-aba="abaFiado">👥 Clientes & Fiado</button>
+            <button class="tab-btn" data-aba="abaStock">📦 Gestão de Stock</button>
+            <button class="tab-btn col-admin" data-aba="abaUsuarios">👤 Gestão de Perfis</button>
+            <button class="tab-btn col-admin" data-aba="abaDashboard">📊 Dashboard & Gráficos</button>
+        </div>
+
+        <!-- ================= ABA 1: VENDAS & MESAS ================= -->
+        <div id="abaVendas" class="tab-content active">
+            <h4>Selecionar Mesa / Comanda</h4>
+            <div class="mesas-grid" id="gridMesas"></div>
+
+            <div style="background:#eef7ff; border:1px solid #b6e0fe; padding:15px; border-radius:8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h4 style="margin:0;">Atendimento: <span id="labelMesaAtual" style="color:var(--primary);">Balcão (Venda Direta)</span></h4>
+                    <button class="btn-dark btn-sm" id="btnLimparBalcao">Limpar para Balcão</button>
+                </div>
+                
+                <div class="form-row" style="margin-top:12px;">
+                    <div class="form-group">
+                        <label>Produto</label>
+                        <select id="cartSelectProduto"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Quantidade</label>
+                        <input type="number" id="cartQtd" value="1" min="0.1" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>Preço Unit. (MT)</label>
+                        <input type="number" id="cartPrecoUnit" step="0.5">
+                    </div>
+                    <div class="form-group" style="align-self:flex-end;">
+                        <button type="button" class="btn-success" id="btnAdicionarCarrinho">+ Adicionar Item</button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr><th>Produto</th><th>Qtd</th><th>Preço Unit.</th><th>Subtotal</th><th>Ação</th></tr>
+                        </thead>
+                        <tbody id="corpoCarrinho"></tbody>
+                    </table>
+                </div>
+
+                <div class="form-row" style="margin-top:15px; align-items:center;">
+                    <div class="form-group">
+                        <label>Desconto na Conta (MT)</label>
+                        <input type="number" id="cartDesconto" value="0" min="0" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Forma de Pagamento / Conta</label>
+                        <select id="cartMetodoPagamento">
+                            <option value="Numerário">💵 Numerário (Espécie)</option>
+                            <option value="M-Pesa">📱 M-Pesa</option>
+                            <option value="e-Mola">📱 e-Mola</option>
+                            <option value="POS">💳 POS (Cartão)</option>
+                            <option value="Fiado">👥 Venda a Fiado (Conta Cliente)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="boxSeletorClienteFiado" style="display:none;">
+                        <label>Selecionar Cliente</label>
+                        <select id="cartSelectClienteFiado"></select>
+                    </div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; flex-wrap:wrap; gap:10px;">
+                    <div>
+                        <button class="btn-warning btn-sm" id="btnImprimirCozinha">🍳 Pedido p/ Cozinha</button>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-size:1.25em; font-weight:bold;">Total Final: <span id="cartTotalTexto" style="color:var(--success);">0.00 MT</span></span>
+                    </div>
+                    <div>
+                        <button class="btn-success" style="font-size:1.1em;" id="btnFinalizarVenda">✅ Fechar & Emitir Recibo</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= ABA 2: CAIXA & DESPESAS ================= -->
+        <div id="abaCaixa" class="tab-content">
+            <h2>Controlo de Caixa e Turnos</h2>
+            
+            <div id="seccaoAbrirCaixa" style="display:none; background:#eef7ff; padding:15px; border-radius:8px; border:1px solid #b6e0fe;">
+                <h4>Abrir Turno de Caixa</h4>
+                <div class="form-group">
+                    <label>Fundo de Maneio / Troco Inicial (MT)</label>
+                    <input type="number" id="inputFundoManeio" value="1000" min="0" step="50">
+                </div>
+                <button class="btn-success" id="btnConfirmarAbrirCaixa">🔓 Confirmar Abertura de Caixa</button>
+            </div>
+
+            <div id="seccaoCaixaAberto" style="display:none;">
+                <div class="cards-grid">
+                    <div class="card-stat"><h4>Fundo Inicial</h4><div class="valor-card" id="cxValFundo">0.00 MT</div></div>
+                    <div class="card-stat verde"><h4>Entradas Vendas (Espécie)</h4><div class="valor-card" id="cxValVendasNum">0.00 MT</div></div>
+                    <div class="card-stat vermelho"><h4>Saídas / Despesas</h4><div class="valor-card" id="cxValDespesas">0.00 MT</div></div>
+                    <div class="card-stat roxo"><h4>Saldo Esperado em Gaveta</h4><div class="valor-card" id="cxValSaldoGaveta">0.00 MT</div></div>
+                </div>
+
+                <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-top:15px;">
+                    <h4>Registar Saída de Caixa / Despesa do Dia</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Descrição da Despesa</label>
+                            <input type="text" id="despesaDesc" placeholder="Ex: Compra de Gelo, Transporte, Carvão">
+                        </div>
+                        <div class="form-group">
+                            <label>Valor (MT)</label>
+                            <input type="number" id="despesaValor" min="1" step="0.5" placeholder="Ex: 250 MT">
+                        </div>
+                        <div class="form-group" style="align-self:flex-end;">
+                            <button class="btn-saida" id="btnRegistarDespesa">Registar Saída</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top:20px; text-align:right;">
+                    <button class="btn-saida btn-sm" id="btnEncerrarCaixa">🔒 Encerrar Turno de Caixa</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= ABA 3: CLIENTES & FIADO ================= -->
+        <div id="abaFiado" class="tab-content">
+            <h2>Gestão de Clientes & Contas a Fiado</h2>
+            
+            <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:15px;">
+                <h4>Cadastrar Novo Cliente</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome Completo</label>
+                        <input type="text" id="novoClienteNome" placeholder="Nome do cliente">
+                    </div>
+                    <div class="form-group">
+                        <label>Telefone / WhatsApp</label>
+                        <input type="text" id="novoClienteTelefone" placeholder="+258 84/82/86/87...">
+                    </div>
+                    <div class="form-group" style="align-self:flex-end;">
+                        <button class="btn-primary" id="btnCadastrarCliente">+ Cadastrar Cliente</button>
+                    </div>
+                </div>
+            </div>
+
+            <h4>Clientes Cadastrados e Saldo Devedor</h4>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr><th>Nome</th><th>Telefone</th><th>Dívida Atual</th><th>Ações</th></tr>
+                    </thead>
+                    <tbody id="corpoTabelaClientes"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ================= ABA 4: GESTÃO DE STOCK ================= -->
+        <div id="abaStock" class="tab-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+                <h2>Gestão de Stock na Despensa</h2>
+                <button class="btn-excel btn-sm" id="btnExportarStock">📊 Exportar Stock para Excel</button>
+            </div>
+
+            <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:15px;">
+                <h4>📥 Dar Entrada de Produtos no Stock (Compras / Reposição)</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Produto / Bebida</label>
+                        <input type="text" id="simplesProduto" placeholder="Ex: Cerveja 2M, Coca-Cola 330ml">
+                    </div>
+                    <div class="form-group">
+                        <label>Quantidade Total de Unidades</label>
+                        <input type="number" id="simplesQtd" value="1" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label style="color:var(--success);">Preço de Venda por Unidade (MT)</label>
+                        <input type="number" id="simplesPrecoVendaUnit" step="0.5" placeholder="Ex: 70 MT">
+                    </div>
+                    <div class="form-group" style="align-self:flex-end;">
+                        <button class="btn-success" id="btnSalvarStock">📥 Atualizar Stock</button>
+                    </div>
+                </div>
+            </div>
+
+            <h4>📦 Quantidade Atual de Produtos em Stock</h4>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th>Stock Atual</th>
+                            <th>Preço Venda Unit.</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoStock"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ================= ABA 5: GESTÃO DE PERFIS ================= -->
+        <div id="abaUsuarios" class="tab-content col-admin">
+            <h2>Gestão de Perfis dos Utilizadores</h2>
+            <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:20px;">
+                <h4>Criar Novo Perfil</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome do Utilizador</label>
+                        <input type="text" id="novoUserNome" placeholder="Ex: joao, maria">
+                    </div>
+                    <div class="form-group">
+                        <label>Palavra-passe</label>
+                        <input type="password" id="novoUserSenha" placeholder="Senha do utilizador">
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo de Permissão</label>
+                        <select id="novoUserTipo">
+                            <option value="vendedor">🛒 Operador de Caixa / Vendedor</option>
+                            <option value="admin">⚙️ Administrador (Acesso Total)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="align-self:flex-end;">
+                        <button class="btn-success" id="btnCadastrarUsuario">+ Criar Perfil</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= ABA 6: DASHBOARD & RELATÓRIOS ================= -->
+        <div id="abaDashboard" class="tab-content col-admin">
+            <h2>Painel Financeiro & Relatórios</h2>
+            <div class="cards-grid">
+                <div class="card-stat verde"><h4>Total Vendas (Hoje)</h4><div class="valor-card" id="dashTotalVendasHoje">0.00 MT</div></div>
+                <div class="card-stat laranja"><h4>Lucro Estimado</h4><div class="valor-card" id="dashLucroHoje">0.00 MT</div></div>
+                <div class="card-stat vermelho"><h4>Total Despesas</h4><div class="valor-card" id="dashDespesasHoje">0.00 MT</div></div>
+                <div class="card-stat roxo"><h4>Total Fiado Pendente</h4><div class="valor-card" id="dashFiadoPendente">0.00 MT</div></div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- MODAL QR CODE MENU DIGITAL -->
+<div id="modalQRMenu" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" id="fecharQRModal">&times;</span>
+        <h3>📱 QR Code do Menu Digital</h3>
+        <p>Os clientes podem digitalizar este código para ver o menu no telemóvel:</p>
+        <div id="qrcodeContainer" style="display:flex; justify-content:center; margin:20px 0;"></div>
+    </div>
+</div>
+
+<!-- AREA DE IMPRESSÃO -->
+<div id="areaImpressao"></div>
+
+<!-- LÓGICA JAVASCRIPT & FIREBASE -->
+<script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
       getFirestore, doc, collection, onSnapshot, updateDoc, setDoc 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // 🔴 CREDENCIAIS DO FIREBASE
+    // 🔴 CREDENCIAIS DO SEU FIREBASE
     const firebaseConfig = {
-      apiKey: "SUA_API_KEY",
-      authDomain: "SEU_PROJETO.firebaseapp.com",
-      projectId: "SEU_PROJETO_ID",
-      storageBucket: "SEU_PROJETO.appspot.com",
-      messagingSenderId: "123456789",
-      appId: "1:123456789:web:abcdef"
+      apiKey: "Sua_Key_Real_Aqui",
+      authDomain: "Seu_Domain_Real_Aqui",
+      projectId: "Seu_Project_ID_Real",
+      storageBucket: "Seu_Bucket_Real",
+      messagingSenderId: "Seu_Sender_ID",
+      appId: "Seu_App_ID"
     };
 
-    // Inicialização do Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Escutas Globais
-    let unsubscribeMesas = null;
+    let empresaAtiva = "SABORES01";
+    let usuarioLogado = null;
     let unsubscribeLicenca = null;
+    let unsubscribeMesas = null;
 
-    // Referências DOM
-    const containerMesas = document.getElementById("containerMesas");
-    const codigoEmpresaInput = document.getElementById("codigoEmpresaInput");
-    const nomeTrabalhadorInput = document.getElementById("nomeTrabalhadorInput");
-    const btnRecarregar = document.getElementById("btnRecarregar");
-    const btnGerarMesasTeste = document.getElementById("btnGerarMesasTeste");
-    const modalBloqueioLicenca = document.getElementById("modalBloqueioLicenca");
+    // Alternar Abas
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            const abaTarget = e.target.getAttribute('data-aba');
+            e.target.classList.add('active');
+            document.getElementById(abaTarget).classList.add('active');
+        });
+    });
 
-    // Contadores
-    const countTotal = document.getElementById("countTotal");
-    const countLivre = document.getElementById("countLivre");
-    const countEmUso = document.getElementById("countEmUso");
-    const countOcupada = document.getElementById("countOcupada");
+    // Validar Licença e Mostrar Perfis
+    document.getElementById('btnValidarLicenca').addEventListener('click', () => {
+        const cod = document.getElementById('loginCodigoEmpresa').value.trim().toUpperCase();
+        if (!cod) return alert("Introduza o Código do Restaurante!");
 
-    function conectarEmpresa() {
-      const codigoEmpresa = codigoEmpresaInput.value.trim().toUpperCase();
-      if (!codigoEmpresa) return alert("Por favor, introduza o código da empresa!");
+        empresaAtiva = cod;
+        escutarLicenca(cod);
+    });
 
-      if (unsubscribeMesas) unsubscribeMesas();
-      if (unsubscribeLicenca) unsubscribeLicenca();
-
-      escutarLicenca(codigoEmpresa);
-      escutarMesas(codigoEmpresa);
-    }
-
-    // 1. Escuta do Estado da Licença
     function escutarLicenca(codigoEmpresa) {
-      const licencaRef = doc(db, "empresas", codigoEmpresa, "dados", "licenca");
-      
-      unsubscribeLicenca = onSnapshot(licencaRef, (docSnap) => {
-        if (docSnap.exists()) {
-          const dados = docSnap.data();
-          if (dados.status === "suspenso") {
-            modalBloqueioLicenca.classList.remove("hidden");
-          } else {
-            modalBloqueioLicenca.classList.add("hidden");
-          }
-        } else {
-          modalBloqueioLicenca.classList.add("hidden");
-        }
-      }, (err) => console.log("Aguardando licença...", err));
-    }
+        const licencaRef = doc(db, "empresas", codigoEmpresa, "dados", "licenca");
+        
+        if (unsubscribeLicenca) unsubscribeLicenca();
 
-    // 2. Escuta das Mesas em Tempo Real
-    function escutarMesas(codigoEmpresa) {
-      const mesasRef = collection(db, "empresas", codigoEmpresa, "dados", "mesas");
+        unsubscribeLicenca = onSnapshot(licencaRef, (docSnap) => {
+            const boxBloqueio = document.getElementById('boxContaBloqueada');
+            const seccaoPerfis = document.getElementById('seccaoPerfisEForm');
 
-      unsubscribeMesas = onSnapshot(mesasRef, (snapshot) => {
-        containerMesas.innerHTML = "";
-
-        let cLivre = 0, cUso = 0, cOcupada = 0;
-        const cTotal = snapshot.size;
-
-        if (cTotal === 0) {
-          containerMesas.innerHTML = `<p style="grid-column: 1/-1; text-align:center; padding: 40px; color: #888;">Nenhuma mesa configurada. Clique em "Gerar 12 Mesas" acima.</p>`;
-        }
-
-        snapshot.forEach((documento) => {
-          const mesa = documento.data();
-          const idMesa = documento.id;
-
-          if (mesa.status === "em_uso") cUso++;
-          else if (mesa.status === "ocupada") cOcupada++;
-          else cLivre++;
-
-          let badgeText = "LIVRE";
-          let badgeClass = "badge-livre";
-          let cardClass = "livre";
-          let infoText = `<p class="worker-info"><i class="fa-regular fa-circle-check" style="color:#2e7d32;"></i> Disponível</p>`;
-          let btnText = "Abrir Mesa";
-
-          if (mesa.status === "em_uso") {
-            badgeText = "EM USO";
-            badgeClass = "badge-em_uso";
-            cardClass = "em_uso";
-            infoText = `<p class="worker-info"><i class="fa-solid fa-user-pen"></i> Gerida por: <strong>${mesa.atendente || 'Funcionário'}</strong></p>`;
-            btnText = "Lançar Pedido";
-          } else if (mesa.status === "ocupada") {
-            badgeText = "OCUPADA";
-            badgeClass = "badge-ocupada";
-            cardClass = "ocupada";
-            infoText = `<p class="worker-info"><i class="fa-solid fa-utensils"></i> Atendido por: <strong>${mesa.atendente || 'Funcionário'}</strong></p>`;
-            btnText = "Fechar Conta";
-          }
-
-          const card = document.createElement("div");
-          card.className = `mesa-card ${cardClass}`;
-          card.innerHTML = `
-            <div class="mesa-header">
-              <span class="mesa-title">Mesa ${mesa.numero}</span>
-              <span class="status-badge ${badgeClass}">${badgeText}</span>
-            </div>
-            <div class="mesa-body">
-              ${infoText}
-            </div>
-            <div class="mesa-footer">
-              <span class="total-price">MT ${mesa.totalConsumo ? mesa.totalConsumo.toFixed(2) : '0,00'}</span>
-              <button class="btn-acao btn-gerir" data-id="${idMesa}" data-status="${mesa.status}">${btnText}</button>
-            </div>
-          `;
-
-          containerMesas.appendChild(card);
+            if (docSnap.exists() && docSnap.data().status === "suspenso") {
+                boxBloqueio.style.display = "block";
+                seccaoPerfis.style.display = "none";
+            } else {
+                boxBloqueio.style.display = "none";
+                seccaoPerfis.style.display = "block";
+                carregarPerfisIniciais();
+            }
+        }, (err) => {
+            document.getElementById('boxContaBloqueada').style.display = "none";
+            document.getElementById('seccaoPerfisEForm').style.display = "block";
+            carregarPerfisIniciais();
         });
+    }
 
-        countTotal.innerText = cTotal;
-        countLivre.innerText = cLivre;
-        countEmUso.innerText = cUso;
-        countOcupada.innerText = cOcupada;
+    function carregarPerfisIniciais() {
+        const grid = document.getElementById('gridPerfisLogin');
+        grid.innerHTML = `
+            <div class="card-perfil-login active" onclick="document.getElementById('loginUser').value='Valter Lopes'">
+                <div class="avatar-placeholder">V</div>
+                <small>Valter Lopes</small>
+            </div>
+            <div class="card-perfil-login" onclick="document.getElementById('loginUser').value='Caixa'">
+                <div class="avatar-placeholder">C</div>
+                <small>Operador</small>
+            </div>
+        `;
+    }
 
-        document.querySelectorAll(".btn-gerir").forEach(btn => {
-          btn.addEventListener("click", (e) => {
-            const id = e.target.getAttribute("data-id");
-            const statusAtual = e.target.getAttribute("data-status");
-            gerirEstadoMesa(id, statusAtual);
-          });
+    // Login no Sistema
+    document.getElementById('btnEntrarSistema').addEventListener('click', () => {
+        const user = document.getElementById('loginUser').value.trim();
+        if (!user) return alert("Selecione um utilizador!");
+
+        usuarioLogado = user;
+        document.getElementById('telaLogin').style.display = 'none';
+        document.getElementById('telaSistema').style.display = 'block';
+        document.getElementById('nomeEmpresaHeader').innerText = empresaAtiva;
+        document.getElementById('nomeUsuarioLogado').innerText = user;
+
+        conectarMesasTempoReal();
+    });
+
+    // Escuta em Tempo Real do Mapa de Mesas
+    function conectarMesasTempoReal() {
+        const mesasRef = collection(db, "empresas", empresaAtiva, "dados", "mesas");
+        
+        if (unsubscribeMesas) unsubscribeMesas();
+
+        unsubscribeMesas = onSnapshot(mesasRef, (snapshot) => {
+            const grid = document.getElementById('gridMesas');
+            grid.innerHTML = "";
+
+            if (snapshot.empty) {
+                grid.innerHTML = "<p>Nenhuma mesa encontrada. A criar 12 mesas...</p>";
+                gerar12MesasIniciais();
+                return;
+            }
+
+            snapshot.forEach((documento) => {
+                const mesa = documento.data();
+                const idMesa = documento.id;
+
+                let classeStatus = "";
+                let textoStatus = "Livre";
+
+                if (mesa.status === "em_uso") {
+                    classeStatus = "em_uso";
+                    textoStatus = `Em Uso (${mesa.atendente || 'Staff'})`;
+                } else if (mesa.status === "ocupada") {
+                    classeStatus = "ocupada";
+                    textoStatus = `Ocupada (${mesa.totalConsumo || 0} MT)`;
+                }
+
+                const card = document.createElement('div');
+                card.className = `card-mesa ${classeStatus}`;
+                card.innerHTML = `Mesa ${mesa.numero}<br><small>${textoStatus}</small>`;
+                card.onclick = () => clicarMesa(idMesa, mesa.status);
+                grid.appendChild(card);
+            });
         });
-      });
     }
 
-    // 3. Ação nas Mesas
-    async function gerirEstadoMesa(idMesa, statusAtual) {
-      const codigoEmpresa = codigoEmpresaInput.value.trim().toUpperCase();
-      const nomeTrabalhador = nomeTrabalhadorInput.value.trim() || "Atendente";
-      const mesaRef = doc(db, "empresas", codigoEmpresa, "dados", "mesas", idMesa);
+    async function clicarMesa(idMesa, statusAtual) {
+        const mesaRef = doc(db, "empresas", empresaAtiva, "dados", "mesas", idMesa);
 
-      if (statusAtual === "livre") {
-        await updateDoc(mesaRef, {
-          status: "em_uso",
-          atendente: nomeTrabalhador,
-          ultimaAtualizacao: new Date()
-        });
-      } else if (statusAtual === "em_uso") {
-        const acao = confirm("Deseja confirmar o pedido e marcar a mesa como OCUPADA?\n(OK = Ocupada / Cancelar = Libertar Mesa)");
-        if (acao) {
-          await updateDoc(mesaRef, {
-            status: "ocupada",
-            totalConsumo: 1500.00
-          });
-        } else {
-          await updateDoc(mesaRef, { status: "livre", atendente: "", totalConsumo: 0 });
+        if (statusAtual === "livre") {
+            await updateDoc(mesaRef, {
+                status: "em_uso",
+                atendente: usuarioLogado
+            });
+        } else if (statusAtual === "em_uso") {
+            if (confirm("Marcar mesa como Ocupada com Pedido?")) {
+                await updateDoc(mesaRef, { status: "ocupada", totalConsumo: 1500 });
+            } else {
+                await updateDoc(mesaRef, { status: "livre", atendente: "" });
+            }
+        } else if (statusAtual === "ocupada") {
+            if (confirm("Fechar conta e libertar mesa?")) {
+                await updateDoc(mesaRef, { status: "livre", atendente: "", totalConsumo: 0 });
+            }
         }
-      } else if (statusAtual === "ocupada") {
-        if (confirm("Deseja fechar a conta e LIBERTAR a mesa?")) {
-          await updateDoc(mesaRef, {
-            status: "livre",
-            atendente: "",
-            totalConsumo: 0
-          });
+    }
+
+    async function gerar12MesasIniciais() {
+        for (let i = 1; i <= 12; i++) {
+            const idMesa = `mesa_${i < 10 ? '0' + i : i}`;
+            const mesaRef = doc(db, "empresas", empresaAtiva, "dados", "mesas", idMesa);
+            await setDoc(mesaRef, {
+                numero: i < 10 ? '0' + i : `${i}`,
+                status: "livre",
+                atendente: "",
+                totalConsumo: 0
+            }, { merge: true });
         }
-      }
     }
 
-    // 4. Inicializar 12 Mesas
-    async function gerarMesasIniciais() {
-      const codigoEmpresa = codigoEmpresaInput.value.trim().toUpperCase();
-      if (!codigoEmpresa) return;
+    // Modal QR Menu
+    document.getElementById('btnQRMenu').addEventListener('click', () => {
+        document.getElementById('modalQRMenu').style.display = 'block';
+        document.getElementById('qrcodeContainer').innerHTML = "";
+        new QRCode(document.getElementById("qrcodeContainer"), `https://menu-${empresaAtiva.toLowerCase()}.vercel.app`);
+    });
 
-      for (let i = 1; i <= 12; i++) {
-        const idMesa = `mesa_${i < 10 ? '0' + i : i}`;
-        const mesaRef = doc(db, "empresas", codigoEmpresa, "dados", "mesas", idMesa);
-        await setDoc(mesaRef, {
-          numero: i < 10 ? '0' + i : `${i}`,
-          status: "livre",
-          atendente: "",
-          totalConsumo: 0
-        }, { merge: true });
-      }
-      alert("12 Mesas criadas no Firestore com sucesso!");
-    }
+    document.getElementById('fecharQRModal').addEventListener('click', () => {
+        document.getElementById('modalQRMenu').style.display = 'none';
+    });
 
-    btnRecarregar.addEventListener("click", conectarEmpresa);
-    btnGerarMesasTeste.addEventListener("click", gerarMesasIniciais);
-
-    window.addEventListener("DOMContentLoaded", conectarEmpresa);
-  </script>
+    // Logout
+    document.getElementById('btnLogout').addEventListener('click', () => {
+        location.reload();
+    });
+</script>
 </body>
 </html>
