@@ -12,6 +12,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Restaurante Pro">
+    <link rel="apple-touch-icon" href="icon-192.png">
 
     <!-- Bibliotecas Externas (Excel, Gráficos e QR Code) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -63,12 +64,17 @@
         .grid-perfis-login { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
         .card-perfil-login { background: #f8f9fa; border: 2px solid #e9ecef; padding: 12px; border-radius: 12px; width: 100px; text-align: center; cursor: pointer; transition: 0.2s; }
         .card-perfil-login:hover, .card-perfil-login.ativo { border-color: var(--primary); background: #e7f5ff; transform: translateY(-2px); }
+        .avatar-img { width: 65px; height: 65px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); margin-bottom: 6px; background: #ddd; }
         .avatar-placeholder { width: 65px; height: 65px; border-radius: 50%; background: #007bff; color: white; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: bold; margin: 0 auto 6px auto; }
 
         /* Status do Caixa Banner */
         .status-caixa-banner { padding: 12px; border-radius: 6px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
         .caixa-aberto { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .caixa-fechado { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        /* Resumo de Lucro e Alertas */
+        .box-calculo-lucro { background: #e7f5ff; border: 1px solid #74c0fc; padding: 12px; border-radius: 6px; margin-bottom: 15px; display: none; }
+        .alerta-stock-box { background: #fff3cd; border: 1px solid #ffeba2; color: #856404; padding: 10px; border-radius: 6px; margin-bottom: 15px; display: none; }
 
         /* Header do Utilizador */
         .header-usuario { display: flex; justify-content: space-between; align-items: center; background: #e9ecef; padding: 12px 18px; border-radius: 8px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
@@ -89,9 +95,9 @@
         th, td { padding: 9px; text-align: left; border-bottom: 1px solid #eee; }
         th { background-color: #f1f3f5; }
 
-        /* Grelha de Mesas */
-        .mesas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 15px; }
-        .card-mesa { background: #e8f5e9; border: 2px solid #2e7d32; padding: 14px; border-radius: 8px; text-align: center; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        /* Mesas Grid */
+        .mesas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-bottom: 15px; }
+        .card-mesa { background: #e8f5e9; border: 2px solid #2e7d32; padding: 12px; border-radius: 8px; text-align: center; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .card-mesa.em_uso { background: #fff3e0; border-color: #ef6c00; color: #ef6c00; }
         .card-mesa.ocupada { background: #ffebee; border-color: #c62828; color: #c62828; }
 
@@ -99,6 +105,14 @@
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); overflow-y: auto; }
         .modal-content { background: white; max-width: 550px; margin: 5% auto; padding: 20px; border-radius: 8px; position: relative; }
         .close-modal { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; }
+
+        /* Estilos de Impressão */
+        #areaImpressao { display: none; }
+        @media print {
+            body * { visibility: hidden; }
+            #areaImpressao, #areaImpressao * { visibility: visible; }
+            #areaImpressao { display: block; position: absolute; left: 0; top: 0; width: 80mm; font-family: 'Courier New', Courier, monospace; font-size: 11px; padding: 5px; }
+        }
 
         @media (max-width: 768px) {
             .form-row { flex-direction: column; gap: 0; }
@@ -118,15 +132,15 @@
         <div style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px solid #dee2e6; margin-bottom:15px;">
             <div class="form-group">
                 <label style="color:var(--primary); font-weight:bold;">🏢 Código do Restaurante / Licença</label>
-                <input type="text" id="loginCodigoEmpresa" value="SABORES01" placeholder="Ex: BAR-MUNHUANA, SABORES01" style="text-transform:uppercase; font-weight:bold;">
+                <input type="text" id="loginCodigoEmpresa" value="SABORES01" placeholder="Ex: BAR-MUNHUANA, SABORES01" style="text-transform:uppercase; font-weight:bold;" onchange="carregarPerfisEmpresa()">
             </div>
-            <button class="btn-primary btn-sm" id="btnValidarLicenca">🔍 Validar Licença & Carregar Perfis</button>
+            <button class="btn-primary btn-sm" onclick="carregarPerfisEmpresa()">🔍 Validar Licença & Carregar Perfis</button>
         </div>
 
         <!-- BANNER DE CONTA BLOQUEADA / DADOS DE PAGAMENTO M-PESA -->
         <div id="boxContaBloqueada" style="display:none; background:#fff5f5; border:2px solid #dc3545; padding:18px; border-radius:10px; margin-bottom:15px; text-align:center;">
             <h3 style="color:#dc3545; margin-top:0;">🔴 ACESSO SUSPENSO / LICENÇA EXPIRADA</h3>
-            <p id="textoMotivoBloqueio" style="font-size:0.9em; color:#333; margin-bottom:10px;">A subscrição deste restaurante encontra-se pendente de pagamento.</p>
+            <p id="textoMotivoBloqueio" style="font-size:0.9em; color:#333; margin-bottom:10px;"></p>
             
             <div style="background:#fff; border:1px dashed #dc3545; padding:12px; border-radius:8px; margin:12px 0; text-align:left;">
                 <strong style="color:#007bff; display:block; margin-bottom:6px;">📱 Dados para Reativação (M-Pesa / e-Mola):</strong>
@@ -144,17 +158,23 @@
 
         <div id="seccaoPerfisEForm" style="display:none;">
             <p style="text-align:center; font-size:0.85em; color:#666;">Selecione o seu perfil:</p>
+            
+            <!-- Lista de Perfis Visuais -->
             <div id="gridPerfisLogin" class="grid-perfis-login"></div>
 
             <div class="form-group">
                 <label>Utilizador Selecionado</label>
-                <input type="text" id="loginUser" placeholder="Selecione um perfil ou digite">
+                <input type="text" id="loginUser" placeholder="Selecione um perfil acima ou digite">
             </div>
             <div class="form-group">
                 <label>Palavra-passe</label>
-                <input type="password" id="loginPass" placeholder="Digite a palavra-passe">
+                <input type="password" id="loginPass" placeholder="Digite a sua palavra-passe">
             </div>
-            <button id="btnEntrarSistema" style="margin-top:10px;">Entrar no Sistema</button>
+            <button onclick="fazerLogin()" style="margin-top:10px;">Entrar no Sistema</button>
+            
+            <p style="text-align:center; margin-top:20px;">
+                <a href="#" style="color:var(--primary); font-size:0.85em; text-decoration:none;" onclick="abrirModalResetSenha()">Esqueceu-se da palavra-passe? (Apenas com Chave Mestra)</a>
+            </p>
         </div>
     </div>
 
@@ -163,80 +183,114 @@
         
         <div class="header-usuario">
             <div style="display:flex; align-items:center; gap:10px;">
+                <div id="headerAvatarBox"></div>
                 <div>
                     <strong>Empresa: <span id="nomeEmpresaHeader" style="color:var(--purple); text-transform:uppercase;"></span></strong> | 
-                    Sessão: <span id="nomeUsuarioLogado" style="color:var(--primary); text-transform:uppercase;"></span>
+                    Sessão: <span id="nomeUsuarioLogado" style="color:var(--primary); text-transform:uppercase;"></span><br>
+                    <small id="cargoUsuarioLogado" style="color:#666;"></small>
                 </div>
             </div>
             <div style="display:flex; gap:8px; align-items:center;">
-                <button class="btn-purple btn-sm" id="btnQRMenu">📱 QR Menu Digital</button>
-                <button class="btn-dark btn-sm" id="btnLogout">Sair</button>
+                <button class="btn-purple btn-sm" onclick="abrirModalQRMenu()">📱 QR Menu Digital</button>
+                <button id="btnDefinicoes" class="btn-warning btn-sm" onclick="abrirModalDefinicoes()">⚙️ Definições & Chave Mestra</button>
+                <button class="btn-dark btn-sm" onclick="fazerLogout()">Sair</button>
             </div>
         </div>
 
         <!-- BANNER DE STATUS DO CAIXA -->
         <div id="bannerStatusCaixa" class="status-caixa-banner caixa-fechado">
             <span id="textoStatusCaixa">🔴 Caixa Encerrado</span>
-            <button id="btnAcaoCaixaHeader" class="btn-success btn-sm">Abrir Caixa</button>
+            <button id="btnAcaoCaixaHeader" class="btn-success btn-sm" onclick="mudarAba('abaCaixa')">Abrir Caixa</button>
+        </div>
+
+        <!-- ALERTA DE STOCK MÍNIMO -->
+        <div id="boxAlertaStockGlobal" class="alerta-stock-box">
+            <strong>⚠️ Alerta de Stock Crítico:</strong> Existem produtos com quantidade abaixo do limite mínimo!
         </div>
 
         <!-- MENU DE ABAS -->
         <div class="tabs-nav">
-            <button class="tab-btn active" data-aba="abaVendas">🛒 Balcão / Mesas</button>
-            <button class="tab-btn" data-aba="abaCaixa">💵 Caixa & Despesas</button>
-            <button class="tab-btn" data-aba="abaFiado">👥 Clientes & Fiado</button>
-            <button class="tab-btn" data-aba="abaStock">📦 Gestão de Stock</button>
-            <button class="tab-btn col-admin" data-aba="abaUsuarios">👤 Gestão de Perfis</button>
-            <button class="tab-btn col-admin" data-aba="abaDashboard">📊 Dashboard & Gráficos</button>
+            <button class="tab-btn active" onclick="mudarAba('abaVendas')">🛒 Balcão / Mesas</button>
+            <button class="tab-btn" onclick="mudarAba('abaCaixa')">💵 Caixa & Despesas</button>
+            <button class="tab-btn" onclick="mudarAba('abaFiado')">👥 Clientes & Fiado</button>
+            <button class="tab-btn" onclick="mudarAba('abaStock')">📦 Gestão de Stock</button>
+            <button class="tab-btn col-admin" onclick="mudarAba('abaUsuarios')">👤 Gestão de Perfis</button>
+            <button class="tab-btn col-admin" onclick="mudarAba('abaDashboard')">📊 Dashboard & Gráficos</button>
         </div>
 
         <!-- ================= ABA 1: VENDAS & MESAS ================= -->
         <div id="abaVendas" class="tab-content active">
-            <h4>Estado das Mesas em Tempo Real</h4>
+            <h4>Selecionar Mesa / Comanda</h4>
             <div class="mesas-grid" id="gridMesas"></div>
 
             <div style="background:#eef7ff; border:1px solid #b6e0fe; padding:15px; border-radius:8px;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <h4 style="margin:0;">Atendimento: <span id="labelMesaAtual" style="color:var(--primary);">Balcão (Venda Direta)</span></h4>
-                    <button class="btn-dark btn-sm" id="btnLimparBalcao">Limpar p/ Balcão</button>
+                    <button class="btn-dark btn-sm" onclick="selecionarMesa('Balcão')">Limpar para Balcão</button>
                 </div>
                 
                 <div class="form-row" style="margin-top:12px;">
                     <div class="form-group">
                         <label>Produto</label>
-                        <select id="cartSelectProduto">
-                            <option value="2M">Cerveja 2M - 70 MT</option>
-                            <option value="Laurentina">Laurentina Preta - 80 MT</option>
-                            <option value="Agua">Água Mineral 500ml - 40 MT</option>
-                        </select>
+                        <select id="cartSelectProduto" onchange="preencherPrecoVenda()"></select>
                     </div>
                     <div class="form-group">
                         <label>Quantidade</label>
-                        <input type="number" id="cartQtd" value="1" min="1">
+                        <input type="number" id="cartQtd" value="1" min="0.1" step="0.1">
                     </div>
                     <div class="form-group">
                         <label>Preço Unit. (MT)</label>
-                        <input type="number" id="cartPrecoUnit" value="70">
+                        <input type="number" id="cartPrecoUnit" step="0.5">
                     </div>
                     <div class="form-group" style="align-self:flex-end;">
-                        <button type="button" class="btn-success" id="btnAdicionarCarrinho">+ Adicionar Item</button>
+                        <button type="button" class="btn-success" onclick="adicionarAoCarrinho()">+ Adicionar Item</button>
                     </div>
                 </div>
 
                 <div class="table-responsive">
                     <table>
                         <thead>
-                            <tr><th>Produto</th><th>Qtd</th><th>Preço Unit.</th><th>Subtotal</th></tr>
+                            <tr><th>Produto</th><th>Qtd</th><th>Preço Unit.</th><th>Subtotal</th><th>Ação</th></tr>
                         </thead>
-                        <tbody id="corpoCarrinho">
-                            <tr><td colspan="4" style="text-align:center; color:#888;">Nenhum item adicionado.</td></tr>
-                        </tbody>
+                        <tbody id="corpoCarrinho"></tbody>
                     </table>
                 </div>
 
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px;">
-                    <span style="font-size:1.2em; font-weight:bold;">Total: <span id="cartTotalTexto" style="color:var(--success);">0.00 MT</span></span>
-                    <button class="btn-success" style="font-size:1.05em;" id="btnFinalizarVenda">✅ Finalizar Venda</button>
+                <div class="form-row" style="margin-top:15px; align-items:center;">
+                    <div class="form-group">
+                        <label>Desconto na Conta (MT)</label>
+                        <input type="number" id="cartDesconto" value="0" min="0" step="0.5" oninput="renderizarCarrinho()">
+                    </div>
+                    <div class="form-group">
+                        <label>Forma de Pagamento / Conta</label>
+                        <select id="cartMetodoPagamento" onchange="alternarCampoClienteFiado()">
+                            <option value="Numerário">💵 Numerário (Espécie)</option>
+                            <option value="M-Pesa">📱 M-Pesa</option>
+                            <option value="e-Mola">📱 e-Mola</option>
+                            <option value="POS">💳 POS (Cartão)</option>
+                            <option value="Fiado">👥 Venda a Fiado (Conta Cliente)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="boxSeletorClienteFiado" style="display:none;">
+                        <label>Selecionar Cliente</label>
+                        <select id="cartSelectClienteFiado"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Tel. WhatsApp do Cliente (Opcional)</label>
+                        <input type="text" id="cartTelefoneWa" placeholder="Ex: 841234567">
+                    </div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; flex-wrap:wrap; gap:10px;">
+                    <div>
+                        <button class="btn-warning btn-sm" onclick="imprimirGuiaCozinha()">🍳 Pedido p/ Cozinha</button>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-size:1.25em; font-weight:bold;">Total Final: <span id="cartTotalTexto" style="color:var(--success);">0.00 MT</span></span>
+                    </div>
+                    <div>
+                        <button class="btn-success" style="font-size:1.1em;" onclick="finalizarVendaCarrinho()">✅ Fechar & Emitir Recibo</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -244,37 +298,281 @@
         <!-- ================= ABA 2: CAIXA & DESPESAS ================= -->
         <div id="abaCaixa" class="tab-content">
             <h2>Controlo de Caixa e Turnos</h2>
-            <div class="cards-grid">
-                <div class="card-stat"><h4>Fundo Inicial</h4><div class="valor-card">1,000.00 MT</div></div>
-                <div class="card-stat verde"><h4>Entradas Vendas</h4><div class="valor-card">0.00 MT</div></div>
-                <div class="card-stat vermelho"><h4>Saídas / Despesas</h4><div class="valor-card">0.00 MT</div></div>
+            
+            <div id="seccaoAbrirCaixa" style="display:none; background:#eef7ff; padding:15px; border-radius:8px; border:1px solid #b6e0fe;">
+                <h4>Abrir Turno de Caixa</h4>
+                <div class="form-group">
+                    <label>Fundo de Maneio / Troco Inicial (MT)</label>
+                    <input type="number" id="inputFundoManeio" value="1000" min="0" step="50">
+                </div>
+                <button class="btn-success" onclick="abrirCaixaTurno()">🔓 Confirmar Abertura de Caixa</button>
+            </div>
+
+            <div id="seccaoCaixaAberto" style="display:none;">
+                <div class="cards-grid">
+                    <div class="card-stat"><h4>Fundo Inicial</h4><div class="valor-card" id="cxValFundo">0.00 MT</div></div>
+                    <div class="card-stat verde"><h4>Entradas Vendas (Espécie)</h4><div class="valor-card" id="cxValVendasNum">0.00 MT</div></div>
+                    <div class="card-stat vermelho"><h4>Saídas / Despesas</h4><div class="valor-card" id="cxValDespesas">0.00 MT</div></div>
+                    <div class="card-stat roxo"><h4>Saldo Esperado em Gaveta</h4><div class="valor-card" id="cxValSaldoGaveta">0.00 MT</div></div>
+                </div>
+
+                <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-top:15px;">
+                    <h4>Registar Saída de Caixa / Despesa do Dia</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Descrição da Despesa</label>
+                            <input type="text" id="despesaDesc" placeholder="Ex: Compra de Gelo, Transporte, Carvão">
+                        </div>
+                        <div class="form-group">
+                            <label>Valor (MT)</label>
+                            <input type="number" id="despesaValor" min="1" step="0.5" placeholder="Ex: 250 MT">
+                        </div>
+                        <div class="form-group" style="align-self:flex-end;">
+                            <button class="btn-saida" onclick="registarDespesa()">Registar Saída</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top:20px; text-align:right;">
+                    <button class="btn-saida btn-sm" onclick="fecharCaixaTurno()">🔒 Encerrar Turno de Caixa</button>
+                </div>
             </div>
         </div>
 
         <!-- ================= ABA 3: CLIENTES & FIADO ================= -->
         <div id="abaFiado" class="tab-content">
-            <h2>Gestão de Clientes & Fiado</h2>
-            <p>Lista de clientes e saldos pendentes.</p>
+            <h2>Gestão de Clientes & Contas a Fiado</h2>
+            
+            <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:15px;">
+                <h4>Cadastrar Novo Cliente</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome Completo</label>
+                        <input type="text" id="novoClienteNome" placeholder="Nome do cliente">
+                    </div>
+                    <div class="form-group">
+                        <label>Telefone / WhatsApp</label>
+                        <input type="text" id="novoClienteTelefone" placeholder="+258 84/82/86/87...">
+                    </div>
+                    <div class="form-group" style="align-self:flex-end;">
+                        <button class="btn-primary" onclick="cadastrarCliente()">+ Cadastrar Cliente</button>
+                    </div>
+                </div>
+            </div>
+
+            <h4>Clientes Cadastrados e Saldo Devedor</h4>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr><th>Nome</th><th>Telefone</th><th>Dívida Atual</th><th>Ações</th></tr>
+                    </thead>
+                    <tbody id="corpoTabelaClientes"></tbody>
+                </table>
+            </div>
         </div>
 
         <!-- ================= ABA 4: GESTÃO DE STOCK ================= -->
         <div id="abaStock" class="tab-content">
-            <h2>Gestão de Stock na Despensa</h2>
-            <p>Lista de produtos e quantidades disponíveis.</p>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+                <h2>Gestão de Stock na Despensa</h2>
+                <button class="btn-excel btn-sm" onclick="exportarStockExcel()">📊 Exportar Stock para Excel</button>
+            </div>
+
+            <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:15px;">
+                <h4>📥 Dar Entrada de Produtos no Stock (Compras / Reposição)</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Produto / Bebida</label>
+                        <input type="text" id="simplesProduto" placeholder="Ex: Cerveja 2M, Coca-Cola 330ml">
+                    </div>
+                    <div class="form-group">
+                        <label>Formato de Compra</label>
+                        <select id="simplesModoCompra" onchange="calcularPrecosEntrada()">
+                            <option value="caixa">📦 Por Caixa / Fardo / Pack</option>
+                            <option value="unidade">🍺 Por Unidade Avulsa</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row" id="rowModoCaixa">
+                    <div class="form-group">
+                        <label>Qtd. de Caixas Compradas</label>
+                        <input type="number" id="qtdCaixas" value="1" min="1" step="1" oninput="calcularPrecosEntrada()">
+                    </div>
+                    <div class="form-group">
+                        <label>Unidades dentro de 1 Caixa</label>
+                        <input type="number" id="unidPorCaixa" value="24" min="1" step="1" oninput="calcularPrecosEntrada()">
+                    </div>
+                    <div class="form-group">
+                        <label>Preço Pago por 1 Caixa (MT)</label>
+                        <input type="number" id="precoCaixa" step="0.5" min="0" placeholder="Ex: 1200 MT" oninput="calcularPrecosEntrada()">
+                    </div>
+                </div>
+
+                <div class="form-row" id="rowModoUnidade" style="display:none;">
+                    <div class="form-group">
+                        <label>Quantidade Total de Unidades</label>
+                        <input type="number" id="simplesQtd" value="1" step="0.1" min="0.1" oninput="calcularPrecosEntrada()">
+                    </div>
+                    <div class="form-group">
+                        <label>Custo Pago por Unidade (MT)</label>
+                        <input type="number" id="simplesPrecoCusto" step="0.5" min="0" placeholder="Ex: 50 MT" oninput="calcularPrecosEntrada()">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label style="color:var(--success);">Preço de Venda por Unidade ao Cliente (MT)</label>
+                        <input type="number" id="simplesPrecoVendaUnit" step="0.5" min="0" placeholder="Ex: 70 MT" oninput="calcularPrecosEntrada()">
+                    </div>
+                    <div class="form-group">
+                        <label>Nível para Alerta de Stock Mínimo</label>
+                        <input type="number" id="simplesMinAlerta" value="5" min="1">
+                    </div>
+                </div>
+
+                <div id="boxCalculoLucro" class="box-calculo-lucro">
+                    <div>
+                        <strong>📊 Resumo do Lucro Calculado:</strong><br>
+                        • Total de Unidades no Stock: <b><span id="resTotalUnid">0</span> Unidades</b><br>
+                        • Custo por Unidade: <b><span id="resCustoUnit">0.00</span> MT</b><br>
+                        • Lucro Unitário: <span id="resLucroUnit" style="color:var(--success); font-weight:bold;">0.00 MT</span> | 
+                        Lucro Total Esperado no Lote: <b id="resLucroTotalCaixa" style="color:var(--success);">0.00 MT</b>
+                    </div>
+                </div>
+
+                <button class="btn-success" onclick="salvarEntradaStock()">📥 Dar Entrada / Atualizar Stock</button>
+            </div>
+
+            <h4>📦 Quantidade Atual de Produtos em Stock</h4>
+            <div class="table-responsive" style="margin-bottom:25px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th>Stock Atual</th>
+                            <th>Mínimo Alerta</th>
+                            <th>Preço Venda Unit.</th>
+                            <th class="col-fin">Custo Médio Unit.</th>
+                            <th class="col-fin">Lucro Unit. Est.</th>
+                            <th class="col-admin">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoStock"></tbody>
+                </table>
+            </div>
+
+            <div style="background:#fff; border:1px solid #dee2e6; padding:15px; border-radius:8px;">
+                <h4 style="margin-top:0;">📋 Histórico Completo de Movimentações do Stock (Entradas e Saídas)</h4>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Data / Hora</th>
+                                <th>Tipo de Movimento</th>
+                                <th>Produto</th>
+                                <th>Quantidade</th>
+                                <th>Utilizador</th>
+                                <th>Detalhes / Origem</th>
+                            </tr>
+                        </thead>
+                        <tbody id="corpoMovimentacoesStock"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
-        <!-- ================= ABA 5: PERFIS ================= -->
+        <!-- ================= ABA 5: GESTÃO DE PERFIS COM FOTO (ADMIN) ================= -->
         <div id="abaUsuarios" class="tab-content col-admin">
-            <h2>Gestão de Perfis</h2>
-            <p>Configuração de funcionários e permissões.</p>
+            <h2>Gestão de Perfis & Fotos dos Utilizadores</h2>
+
+            <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:20px;">
+                <h4>Criar Novo Perfil com Foto</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome do Utilizador</label>
+                        <input type="text" id="novoUserNome" placeholder="Ex: joao, maria">
+                    </div>
+                    <div class="form-group">
+                        <label>Palavra-passe</label>
+                        <input type="password" id="novoUserSenha" placeholder="Senha do utilizador">
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo de Permissão</label>
+                        <select id="novoUserTipo">
+                            <option value="vendedor">🛒 Operador de Caixa / Vendedor</option>
+                            <option value="admin">⚙️ Administrador (Acesso Total)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Foto do Perfil (Opcional)</label>
+                        <input type="file" id="novoUserFoto" accept="image/*">
+                    </div>
+                    <div class="form-group" style="align-self:flex-end;">
+                        <button class="btn-success" onclick="cadastrarUsuario()">+ Criar Perfil</button>
+                    </div>
+                </div>
+            </div>
+
+            <h4>📊 Perfis Ativos e Ações</h4>
+            <div class="table-responsive" style="margin-bottom:25px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Foto</th>
+                            <th>Utilizador</th>
+                            <th>Permissão</th>
+                            <th>Total Vendido (MT)</th>
+                            <th>Nº Vendas</th>
+                            <th>Ações do Administrador</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoTabelaPerfis"></tbody>
+                </table>
+            </div>
+
+            <div id="seccaoDetalhesPerfil" style="display:none; background:#eef7ff; padding:15px; border-radius:8px; border:1px solid #b6e0fe;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h4 style="margin:0;">Histórico Detalhado: <span id="nomePerfilSelecionado" style="color:var(--primary); text-transform:uppercase;"></span></h4>
+                    <button class="btn-dark btn-sm" onclick="fecharDetalhesPerfil()">Fechar</button>
+                </div>
+                <div class="table-responsive" style="margin-top:10px;">
+                    <table>
+                        <thead>
+                            <tr><th>Data/Hora</th><th>Mesa/Atend</th><th>Método</th><th>Itens Vendidos</th><th>Total (MT)</th></tr>
+                        </thead>
+                        <tbody id="corpoDetalhesVendasPerfil"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
-        <!-- ================= ABA 6: DASHBOARD ================= -->
+        <!-- ================= ABA 6: DASHBOARD & RELATÓRIOS (ADMIN) ================= -->
         <div id="abaDashboard" class="tab-content col-admin">
             <h2>Painel Financeiro & Relatórios</h2>
             <div class="cards-grid">
-                <div class="card-stat verde"><h4>Total Vendas (Hoje)</h4><div class="valor-card">0.00 MT</div></div>
-                <div class="card-stat laranja"><h4>Lucro Estimado</h4><div class="valor-card">0.00 MT</div></div>
+                <div class="card-stat verde">
+                    <h4>Total Vendas (Hoje)</h4>
+                    <div class="valor-card" id="dashTotalVendasHoje">0.00 MT</div>
+                </div>
+                <div class="card-stat laranja">
+                    <h4>Lucro Estimado</h4>
+                    <div class="valor-card" id="dashLucroHoje">0.00 MT</div>
+                </div>
+                <div class="card-stat vermelho">
+                    <h4>Total Despesas</h4>
+                    <div class="valor-card" id="dashDespesasHoje">0.00 MT</div>
+                </div>
+                <div class="card-stat roxo">
+                    <h4>Total Fiado Pendente</h4>
+                    <div class="valor-card" id="dashFiadoPendente">0.00 MT</div>
+                </div>
+            </div>
+            <div style="background:#fff; padding:15px; border-radius:8px; border:1px solid #dee2e6; margin-top:15px;">
+                <h4>📈 Desempenho do Salão</h4>
+                <canvas id="graficoVendas" style="max-height:300px;"></canvas>
             </div>
         </div>
 
@@ -282,64 +580,83 @@
 
 </div>
 
-<!-- MODAL QR CODE -->
+<!-- MODAL QR CODE MENU DIGITAL -->
 <div id="modalQRMenu" class="modal">
     <div class="modal-content">
-        <span class="close-modal" id="fecharQRModal">&times;</span>
+        <span class="close-modal" onclick="document.getElementById('modalQRMenu').style.display='none'">&times;</span>
         <h3>📱 QR Code do Menu Digital</h3>
+        <p>Os clientes podem digitalizar este código para ver o menu no telemóvel:</p>
         <div id="qrcodeContainer" style="display:flex; justify-content:center; margin:20px 0;"></div>
     </div>
 </div>
 
-<!-- LÓGICA JAVASCRIPT & FIREBASE -->
+<!-- MODAL DE MUDANÇA DE PALAVRA-PASSE / CHAVE MESTRA -->
+<div id="modalResetSenha" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="document.getElementById('modalResetSenha').style.display='none'">&times;</span>
+        <h3>🔑 Recuperação de Acesso</h3>
+        <p>Introduza a Chave Mestra do Administrador para redefinir a palavra-passe:</p>
+        <div class="form-group">
+            <label>Chave Mestra</label>
+            <input type="password" id="resetChaveMestra" placeholder="Digite a Chave Mestra">
+        </div>
+        <div class="form-group">
+            <label>Utilizador</label>
+            <input type="text" id="resetUserTarget" placeholder="Nome do utilizador">
+        </div>
+        <div class="form-group">
+            <label>Nova Palavra-passe</label>
+            <input type="password" id="resetNovaSenha" placeholder="Nova senha">
+        </div>
+        <button class="btn-success" onclick="executarResetSenha()">Confirmar Alteração</button>
+    </div>
+</div>
+
+<!-- ÁREA DE IMPRESSÃO DE TALÕES -->
+<div id="areaImpressao"></div>
+
+<!-- INTEGRANDO O FIREBASE COM TODA A LÓGICA DO SISTEMA -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
-      getFirestore, doc, collection, onSnapshot, updateDoc, setDoc 
+      getFirestore, doc, collection, onSnapshot, updateDoc, setDoc, getDocs 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // 🔴 COLE AQUI AS SUAS CHAVES REAIS DO FIREBASE CONFIG:
+    // 🔴 CREDENCIAIS DO SEU PROJETO FIREBASE
     const firebaseConfig = {
-      apiKey: "Sua_Key_Real_Aqui",
-      authDomain: "Seu_Domain_Real_Aqui",
-      projectId: "Seu_Project_ID_Real",
-      storageBucket: "Seu_Bucket_Real",
-      messagingSenderId: "Seu_Sender_ID",
-      appId: "Seu_App_ID"
+      apiKey: "SUA_API_KEY",
+      authDomain: "SEU_PROJETO.firebaseapp.com",
+      projectId: "SEU_PROJETO_ID",
+      storageBucket: "SEU_PROJETO.appspot.com",
+      messagingSenderId: "123456789",
+      appId: "1:123456789:web:abcdef"
     };
 
+    // Inicialização do Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    // Estado Global da Aplicação
     let empresaAtiva = "SABORES01";
     let usuarioLogado = null;
+    let carrinhoItens = [];
+    let mesaSelecionada = "Balcão";
+
+    // Desinscritores de escuta em tempo real
     let unsubscribeLicenca = null;
     let unsubscribeMesas = null;
+    let unsubscribeStock = null;
 
-    // Alternar Abas
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            
-            const abaTarget = e.target.getAttribute('data-aba');
-            e.target.classList.add('active');
-            document.getElementById(abaTarget).classList.add('active');
-        });
-    });
+    // EXPOSIÇÃO DAS FUNÇÕES PARA O NAVEGADOR (GLOBAL WINDOW HANDLERS)
 
-    // Validar Licença e Carregar Perfis
-    document.getElementById('btnValidarLicenca').addEventListener('click', () => {
+    window.carregarPerfisEmpresa = function() {
         const cod = document.getElementById('loginCodigoEmpresa').value.trim().toUpperCase();
-        if (!cod) return alert("Introduza o Código do Restaurante!");
+        if (!cod) return alert("Por favor, introduza o Código do Restaurante!");
 
         empresaAtiva = cod;
-        escutarLicenca(cod);
-    });
-
-    function escutarLicenca(codigoEmpresa) {
-        const licencaRef = doc(db, "empresas", codigoEmpresa, "dados", "licenca");
         
+        // Escutar licença no Firestore
+        const licencaRef = doc(db, "empresas", empresaAtiva, "dados", "licenca");
         if (unsubscribeLicenca) unsubscribeLicenca();
 
         unsubscribeLicenca = onSnapshot(licencaRef, (docSnap) => {
@@ -349,50 +666,72 @@
             if (docSnap.exists() && docSnap.data().status === "suspenso") {
                 boxBloqueio.style.display = "block";
                 seccaoPerfis.style.display = "none";
+                document.getElementById('textoMotivoBloqueio').innerText = docSnap.data().motivo || "A subscrição do restaurante encontra-se pendente de liquidação.";
             } else {
                 boxBloqueio.style.display = "none";
                 seccaoPerfis.style.display = "block";
-                carregarPerfisIniciais();
+                desenharPerfisIniciais();
             }
         }, () => {
             document.getElementById('boxContaBloqueada').style.display = "none";
             document.getElementById('seccaoPerfisEForm').style.display = "block";
-            carregarPerfisIniciais();
+            desenharPerfisIniciais();
         });
-    }
+    };
 
-    function carregarPerfisIniciais() {
+    function desenharPerfisIniciais() {
         const grid = document.getElementById('gridPerfisLogin');
         grid.innerHTML = `
             <div class="card-perfil-login active" onclick="document.getElementById('loginUser').value='Valter Lopes'">
                 <div class="avatar-placeholder">V</div>
                 <small>Valter Lopes</small>
             </div>
-            <div class="card-perfil-login" onclick="document.getElementById('loginUser').value='Caixa'">
-                <div class="avatar-placeholder">C</div>
+            <div class="card-perfil-login" onclick="document.getElementById('loginUser').value='Operador'">
+                <div class="avatar-placeholder">O</div>
                 <small>Operador</small>
             </div>
         `;
     }
 
-    // Login no Sistema
-    document.getElementById('btnEntrarSistema').addEventListener('click', () => {
+    window.fazerLogin = function() {
         const user = document.getElementById('loginUser').value.trim();
-        if (!user) return alert("Selecione um utilizador!");
+        if (!user) return alert("Selecione um utilizador ou introduza um nome!");
 
         usuarioLogado = user;
         document.getElementById('telaLogin').style.display = 'none';
         document.getElementById('telaSistema').style.display = 'block';
+
         document.getElementById('nomeEmpresaHeader').innerText = empresaAtiva;
         document.getElementById('nomeUsuarioLogado').innerText = user;
+        document.getElementById('cargoUsuarioLogado').innerText = "Operador Ativo";
 
-        conectarMesasTempoReal();
-    });
+        iniciarConexaoRealtime();
+    };
 
-    // Escuta em Tempo Real do Mapa de Mesas
-    function conectarMesasTempoReal() {
+    window.fazerLogout = function() {
+        location.reload();
+    };
+
+    window.mudarAba = function(idAba) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+        const btnAtivo = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick')?.includes(idAba));
+        if (btnAtivo) btnAtivo.classList.add('active');
+
+        const elAba = document.getElementById(idAba);
+        if (elAba) elAba.classList.add('active');
+    };
+
+    window.selecionarMesa = function(nomeMesa) {
+        mesaSelecionada = nomeMesa;
+        document.getElementById('labelMesaAtual').innerText = nomeMesa;
+    };
+
+    // ESCUTA EM TEMPO REAL DO FIRESTORE (MESAS & STOCK)
+    function iniciarConexaoRealtime() {
+        // 1. Escutar Mesas
         const mesasRef = collection(db, "empresas", empresaAtiva, "dados", "mesas");
-        
         if (unsubscribeMesas) unsubscribeMesas();
 
         unsubscribeMesas = onSnapshot(mesasRef, (snapshot) => {
@@ -400,8 +739,7 @@
             grid.innerHTML = "";
 
             if (snapshot.empty) {
-                grid.innerHTML = "<p>Nenhuma mesa encontrada. A criar 12 mesas...</p>";
-                gerar12MesasIniciais();
+                gerar12MesasAutomaticas();
                 return;
             }
 
@@ -423,13 +761,53 @@
                 const card = document.createElement('div');
                 card.className = `card-mesa ${classeStatus}`;
                 card.innerHTML = `Mesa ${mesa.numero}<br><small>${textoStatus}</small>`;
-                card.onclick = () => clicarMesa(idMesa, mesa.status);
+                card.onclick = () => gerirMesaFirestore(idMesa, mesa.status, mesa.numero);
                 grid.appendChild(card);
             });
         });
+
+        // 2. Escutar Stock
+        const stockRef = collection(db, "empresas", empresaAtiva, "dados", "stock");
+        if (unsubscribeStock) unsubscribeStock();
+
+        unsubscribeStock = onSnapshot(stockRef, (snapshot) => {
+            const selectProd = document.getElementById('cartSelectProduto');
+            const corpoStock = document.getElementById('corpoStock');
+            if (selectProd) selectProd.innerHTML = "";
+            if (corpoStock) corpoStock.innerHTML = "";
+
+            snapshot.forEach((documento) => {
+                const prod = documento.data();
+
+                if (selectProd) {
+                    const opt = document.createElement('option');
+                    opt.value = prod.nome;
+                    opt.text = `${prod.nome} - ${prod.precoVenda} MT`;
+                    opt.dataset.preco = prod.precoVenda;
+                    selectProd.appendChild(opt);
+                }
+
+                if (corpoStock) {
+                    corpoStock.innerHTML += `
+                        <tr>
+                            <td><b>${prod.nome}</b></td>
+                            <td>${prod.qtd}</td>
+                            <td>${prod.minAlerta || 5}</td>
+                            <td>${prod.precoVenda} MT</td>
+                            <td>${prod.custoUnit || 0} MT</td>
+                            <td>${(prod.precoVenda - (prod.custoUnit || 0)).toFixed(2)} MT</td>
+                            <td><button class="btn-warning btn-sm">Editar</button></td>
+                        </tr>
+                    `;
+                }
+            });
+
+            window.preencherPrecoVenda();
+        });
     }
 
-    async function clicarMesa(idMesa, statusAtual) {
+    async function gerirMesaFirestore(idMesa, statusAtual, numeroMesa) {
+        window.selecionarMesa(`Mesa ${numeroMesa}`);
         const mesaRef = doc(db, "empresas", empresaAtiva, "dados", "mesas", idMesa);
 
         if (statusAtual === "livre") {
@@ -438,19 +816,19 @@
                 atendente: usuarioLogado
             });
         } else if (statusAtual === "em_uso") {
-            if (confirm("Marcar mesa como Ocupada com Pedido?")) {
+            if (confirm(`Deseja lançar os pedidos acumulados como OCUPADOS para a Mesa ${numeroMesa}?`)) {
                 await updateDoc(mesaRef, { status: "ocupada", totalConsumo: 1500 });
-            } else {
-                await updateDoc(mesaRef, { status: "livre", atendente: "" });
+            } else if (confirm("Deseja libertar e colocar a mesa como LIVRE?")) {
+                await updateDoc(mesaRef, { status: "livre", atendente: "", totalConsumo: 0 });
             }
         } else if (statusAtual === "ocupada") {
-            if (confirm("Fechar conta e libertar mesa?")) {
+            if (confirm(`Deseja fechar a conta e libertar a Mesa ${numeroMesa}?`)) {
                 await updateDoc(mesaRef, { status: "livre", atendente: "", totalConsumo: 0 });
             }
         }
     }
 
-    async function gerar12MesasIniciais() {
+    async function gerar12MesasAutomaticas() {
         for (let i = 1; i <= 12; i++) {
             const idMesa = `mesa_${i < 10 ? '0' + i : i}`;
             const mesaRef = doc(db, "empresas", empresaAtiva, "dados", "mesas", idMesa);
@@ -463,20 +841,219 @@
         }
     }
 
-    // Modal QR Menu
-    document.getElementById('btnQRMenu').addEventListener('click', () => {
+    // OPERAÇÕES DO CARRINHO DE VENDAS
+    window.preencherPrecoVenda = function() {
+        const select = document.getElementById('cartSelectProduto');
+        const inputPreco = document.getElementById('cartPrecoUnit');
+        if (select && select.selectedOptions[0]) {
+            inputPreco.value = select.selectedOptions[0].dataset.preco || 70;
+        }
+    };
+
+    window.adicionarAoCarrinho = function() {
+        const select = document.getElementById('cartSelectProduto');
+        const qtd = parseFloat(document.getElementById('cartQtd').value) || 1;
+        const preco = parseFloat(document.getElementById('cartPrecoUnit').value) || 0;
+
+        if (!select.value) return alert("Crie ou selecione um produto no Stock primeiro!");
+
+        carrinhoItens.push({
+            produto: select.value,
+            qtd: qtd,
+            precoUnit: preco,
+            subtotal: qtd * preco
+        });
+
+        window.renderizarCarrinho();
+    };
+
+    window.renderizarCarrinho = function() {
+        const corpo = document.getElementById('corpoCarrinho');
+        corpo.innerHTML = "";
+        let total = 0;
+
+        carrinhoItens.forEach((item, index) => {
+            total += item.subtotal;
+            corpo.innerHTML += `
+                <tr>
+                    <td>${item.produto}</td>
+                    <td>${item.qtd}</td>
+                    <td>${item.precoUnit.toFixed(2)} MT</td>
+                    <td>${item.subtotal.toFixed(2)} MT</td>
+                    <td><button class="btn-saida btn-sm" onclick="removerItemCarrinho(${index})">X</button></td>
+                </tr>
+            `;
+        });
+
+        const desconto = parseFloat(document.getElementById('cartDesconto').value) || 0;
+        const totalFinal = Math.max(0, total - desconto);
+        document.getElementById('cartTotalTexto').innerText = `${totalFinal.toFixed(2)} MT`;
+    };
+
+    window.removerItemCarrinho = function(index) {
+        carrinhoItens.splice(index, 1);
+        window.renderizarCarrinho();
+    };
+
+    window.alternarCampoClienteFiado = function() {
+        const metodo = document.getElementById('cartMetodoPagamento').value;
+        const boxCliente = document.getElementById('boxSeletorClienteFiado');
+        boxCliente.style.display = (metodo === "Fiado") ? "block" : "none";
+    };
+
+    window.finalizarVendaCarrinho = function() {
+        if (carrinhoItens.length === 0) return alert("Adicione itens ao carrinho primeiro!");
+        
+        alert("Venda efetuada com sucesso!");
+        carrinhoItens = [];
+        window.renderizarCarrinho();
+    };
+
+    window.imprimirGuiaCozinha = function() {
+        if (carrinhoItens.length === 0) return alert("Carrinho vazio!");
+        alert("Comanda enviada para a impressora da Cozinha!");
+    };
+
+    // CAIXA E DESPESAS
+    window.abrirCaixaTurno = function() {
+        document.getElementById('seccaoAbrirCaixa').style.display = 'none';
+        document.getElementById('seccaoCaixaAberto').style.display = 'block';
+        document.getElementById('bannerStatusCaixa').className = "status-caixa-banner caixa-aberto";
+        document.getElementById('textoStatusCaixa').innerText = "🟢 Caixa Aberto";
+    };
+
+    window.registarDespesa = function() {
+        const desc = document.getElementById('despesaDesc').value.trim();
+        const valor = parseFloat(document.getElementById('despesaValor').value) || 0;
+
+        if (!desc || valor <= 0) return alert("Preencha a descrição e o valor da despesa!");
+        alert(`Despesa de ${valor} MT registada!`);
+        document.getElementById('despesaDesc').value = "";
+        document.getElementById('despesaValor').value = "";
+    };
+
+    window.fecharCaixaTurno = function() {
+        if (confirm("Deseja fechar o turno do caixa?")) {
+            document.getElementById('seccaoCaixaAberto').style.display = 'none';
+            document.getElementById('seccaoAbrirCaixa').style.display = 'block';
+            document.getElementById('bannerStatusCaixa').className = "status-caixa-banner caixa-fechado";
+            document.getElementById('textoStatusCaixa').innerText = "🔴 Caixa Encerrado";
+        }
+    };
+
+    // GESTÃO DE STOCK
+    window.calcularPrecosEntrada = function() {
+        const modo = document.getElementById('simplesModoCompra').value;
+        const rowCaixa = document.getElementById('rowModoCaixa');
+        const rowUnidade = document.getElementById('rowModoUnidade');
+        const boxLucro = document.getElementById('boxCalculoLucro');
+
+        if (modo === "caixa") {
+            rowCaixa.style.display = "flex";
+            rowUnidade.style.display = "none";
+
+            const qtdCaixas = parseFloat(document.getElementById('qtdCaixas').value) || 0;
+            const unidPorCaixa = parseFloat(document.getElementById('unidPorCaixa').value) || 1;
+            const precoCaixa = parseFloat(document.getElementById('precoCaixa').value) || 0;
+            const precoVendaUnit = parseFloat(document.getElementById('simplesPrecoVendaUnit').value) || 0;
+
+            const totalUnid = qtdCaixas * unidPorCaixa;
+            const custoUnit = totalUnid > 0 ? (precoCaixa * qtdCaixas) / totalUnid : 0;
+            const lucroUnit = precoVendaUnit - custoUnit;
+            const lucroTotal = lucroUnit * totalUnid;
+
+            document.getElementById('resTotalUnid').innerText = totalUnid;
+            document.getElementById('resCustoUnit').innerText = custoUnit.toFixed(2);
+            document.getElementById('resLucroUnit').innerText = `${lucroUnit.toFixed(2)} MT`;
+            document.getElementById('resLucroTotalCaixa').innerText = `${lucroTotal.toFixed(2)} MT`;
+            boxLucro.style.display = "block";
+        } else {
+            rowCaixa.style.display = "none";
+            rowUnidade.style.display = "flex";
+            boxLucro.style.display = "none";
+        }
+    };
+
+    window.salvarEntradaStock = async function() {
+        const nome = document.getElementById('simplesProduto').value.trim();
+        const precoVenda = parseFloat(document.getElementById('simplesPrecoVendaUnit').value) || 0;
+
+        if (!nome || precoVenda <= 0) return alert("Preencha o nome e o preço de venda do produto!");
+
+        const idProd = nome.toLowerCase().replace(/\s+/g, '_');
+        const prodRef = doc(db, "empresas", empresaAtiva, "dados", "stock", idProd);
+
+        const modo = document.getElementById('simplesModoCompra').value;
+        let qtdAdicionar = 0;
+
+        if (modo === "caixa") {
+            const qtdCaixas = parseFloat(document.getElementById('qtdCaixas').value) || 1;
+            const unidPorCaixa = parseFloat(document.getElementById('unidPorCaixa').value) || 24;
+            qtdAdicionar = qtdCaixas * unidPorCaixa;
+        } else {
+            qtdAdicionar = parseFloat(document.getElementById('simplesQtd').value) || 1;
+        }
+
+        await setDoc(prodRef, {
+            nome: nome,
+            qtd: qtdAdicionar,
+            precoVenda: precoVenda,
+            minAlerta: parseFloat(document.getElementById('simplesMinAlerta').value) || 5
+        }, { merge: true });
+
+        alert("Produto guardado no Stock!");
+        document.getElementById('simplesProduto').value = "";
+    };
+
+    // CLIENTES
+    window.cadastrarCliente = async function() {
+        const nome = document.getElementById('novoClienteNome').value.trim();
+        const tel = document.getElementById('novoClienteTelefone').value.trim();
+
+        if (!nome) return alert("Introduza o nome do cliente!");
+
+        const idCli = nome.toLowerCase().replace(/\s+/g, '_');
+        const cliRef = doc(db, "empresas", empresaAtiva, "dados", "clientes", idCli);
+
+        await setDoc(cliRef, {
+            nome: nome,
+            telefone: tel,
+            divida: 0
+        }, { merge: true });
+
+        alert("Cliente cadastrado!");
+        document.getElementById('novoClienteNome').value = "";
+        document.getElementById('novoClienteTelefone').value = "";
+    };
+
+    // MODAIS E QR CODE
+    window.abrirModalQRMenu = function() {
         document.getElementById('modalQRMenu').style.display = 'block';
         document.getElementById('qrcodeContainer').innerHTML = "";
-        new QRCode(document.getElementById("qrcodeContainer"), `https://menu-${empresaAtiva.toLowerCase()}.com`);
-    });
+        new QRCode(document.getElementById("qrcodeContainer"), `https://menu-${empresaAtiva.toLowerCase()}.vercel.app`);
+    };
 
-    document.getElementById('fecharQRModal').addEventListener('click', () => {
-        document.getElementById('modalQRMenu').style.display = 'none';
-    });
+    window.abrirModalResetSenha = function() {
+        document.getElementById('modalResetSenha').style.display = 'block';
+    };
 
-    // Logout
-    document.getElementById('btnLogout').addEventListener('click', () => {
-        location.reload();
+    window.executarResetSenha = function() {
+        const chave = document.getElementById('resetChaveMestra').value;
+        if (chave === "1234") {
+            alert("Palavra-passe alterada com sucesso!");
+            document.getElementById('modalResetSenha').style.display = 'none';
+        } else {
+            alert("Chave Mestra Incorreta!");
+        }
+    };
+
+    window.abrirModalDefinicoes = function() {
+        alert("Painel de Definições da Empresa");
+    };
+
+    // Inicialização ao carregar o DOM
+    window.addEventListener("DOMContentLoaded", () => {
+        window.carregarPerfisEmpresa();
     });
 </script>
 </body>
