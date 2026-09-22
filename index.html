@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Gestão Master - Restaurante Pro</title>
+    <title>Sistema de Gestão Master - Restaurante Pro (SaaS)</title>
 
     <!-- Bibliotecas Externas (Excel, Gráficos e QR Code) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -89,7 +89,7 @@
         .alerta { color: var(--danger); font-weight: bold; }
         .badge { padding: 3px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold; background: #eee; }
         .badge-entrada { background: #d4edda; color: #155724; }
-        .badge-saida { background: #f8d7da; color: #721c24; }
+        .badge-saida { background: #f8f9fa; color: #721c24; }
 
         /* Mesas Grid */
         .mesas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-bottom: 15px; }
@@ -119,39 +119,51 @@
 <body>
 
 <div class="container">
-    <div id="loadingNuvem" style="text-align:center; padding:20px; font-weight:bold; color:var(--primary);">A sincronizar com a nuvem...</div>
 
-    <!-- ECRÃ DE LOGIN COM SELEÇÃO DE PERFIS -->
-    <div id="telaLogin" style="display:none; max-width:480px; margin:0 auto;">
-        <h2 style="text-align:center;">Entrar no Sistema</h2>
-        <p style="text-align:center; font-size:0.85em; color:#666;">Selecione o seu perfil para entrar:</p>
-        
-        <!-- Lista de Perfis Visuais -->
-        <div id="gridPerfisLogin" class="grid-perfis-login"></div>
+    <!-- ECRÃ DE LOGIN MULTI-TENANT (SaaS) -->
+    <div id="telaLogin" style="max-width:480px; margin:20px auto;">
+        <h2 style="text-align:center; margin-bottom:5px;">Entrar no Sistema</h2>
+        <p style="text-align:center; font-size:0.85em; color:#666; margin-top:0;">Introduza o Código da Empresa e as suas credenciais:</p>
 
-        <div class="form-group">
-            <label>Utilizador Selecionado</label>
-            <input type="text" id="loginUser" placeholder="Selecione um perfil acima ou digite">
+        <div style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px solid #dee2e6; margin-bottom:15px;">
+            <div class="form-group">
+                <label style="color:var(--primary); font-weight:bold;">🏢 Código do Restaurante / Licença</label>
+                <input type="text" id="loginCodigoEmpresa" placeholder="Ex: REST01, SABORES, BAR-MAPUTO" style="text-transform:uppercase; font-weight:bold;" onchange="carregarPerfisEmpresa()">
+            </div>
+            <button class="btn-primary btn-sm" onclick="carregarPerfisEmpresa()">🔍 Buscar Perfis do Restaurante</button>
         </div>
-        <div class="form-group">
-            <label>Palavra-passe</label>
-            <input type="password" id="loginPass" placeholder="Digite a sua palavra-passe">
+
+        <div id="seccaoPerfisEForm" style="display:none;">
+            <p style="text-align:center; font-size:0.85em; color:#666;">Selecione o seu perfil:</p>
+            
+            <!-- Lista de Perfis Visuais -->
+            <div id="gridPerfisLogin" class="grid-perfis-login"></div>
+
+            <div class="form-group">
+                <label>Utilizador Selecionado</label>
+                <input type="text" id="loginUser" placeholder="Selecione um perfil acima ou digite">
+            </div>
+            <div class="form-group">
+                <label>Palavra-passe</label>
+                <input type="password" id="loginPass" placeholder="Digite a sua palavra-passe">
+            </div>
+            <button onclick="fazerLogin()" style="margin-top:10px;">Entrar no Sistema</button>
+            
+            <p style="text-align:center; margin-top:20px;">
+                <a href="#" style="color:var(--primary); font-size:0.85em; text-decoration:none;" onclick="abrirModalResetSenha()">Esqueceu-se da palavra-passe? (Apenas com Chave Mestra)</a>
+            </p>
         </div>
-        <button onclick="fazerLogin()" style="margin-top:10px;">Entrar no Sistema</button>
-        
-        <p style="text-align:center; margin-top:20px;">
-            <a href="#" style="color:var(--primary); font-size:0.85em; text-decoration:none;" onclick="abrirModalResetSenha()">Esqueceu-se da palavra-passe? (Apenas com Chave Mestra)</a>
-        </p>
     </div>
 
-    <!-- ECRÃ PRINCIPAL -->
+    <!-- ECRÃ PRINCIPAL DO SISTEMA -->
     <div id="telaSistema" style="display:none;">
         
         <div class="header-usuario">
             <div style="display:flex; align-items:center; gap:10px;">
                 <div id="headerAvatarBox"></div>
                 <div>
-                    <strong>Sessão Ativa: <span id="nomeUsuarioLogado" style="color:var(--primary); text-transform:uppercase;"></span></strong><br>
+                    <strong>Empresa: <span id="nomeEmpresaHeader" style="color:var(--purple); text-transform:uppercase;"></span></strong> | 
+                    Sessão: <span id="nomeUsuarioLogado" style="color:var(--primary); text-transform:uppercase;"></span><br>
                     <small id="cargoUsuarioLogado" style="color:#666;"></small>
                 </div>
             </div>
@@ -212,7 +224,6 @@
                     </div>
                 </div>
 
-                <!-- TABELA DO CARRINHO -->
                 <div class="table-responsive">
                     <table>
                         <thead>
@@ -222,7 +233,6 @@
                     </table>
                 </div>
 
-                <!-- DESCONTO E PAGAMENTO -->
                 <div class="form-row" style="margin-top:15px; align-items:center;">
                     <div class="form-group">
                         <label>Desconto na Conta (MT)</label>
@@ -345,7 +355,6 @@
                 <button class="btn-excel btn-sm" onclick="exportarStockExcel()">📊 Exportar Stock para Excel</button>
             </div>
 
-            <!-- FORMULÁRIO DE ENTRADA -->
             <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:15px;">
                 <h4>📥 Dar Entrada de Produtos no Stock (Compras / Reposição)</h4>
                 <div class="form-row">
@@ -412,7 +421,6 @@
                 <button class="btn-success" onclick="salvarEntradaStock()">📥 Dar Entrada / Atualizar Stock</button>
             </div>
 
-            <!-- TABELA DE STOCK ATUAL -->
             <h4>📦 Quantidade Atual de Produtos em Stock</h4>
             <div class="table-responsive" style="margin-bottom:25px;">
                 <table>
@@ -431,7 +439,6 @@
                 </table>
             </div>
 
-            <!-- TABELA DE HISTÓRICO DE ENTRADAS E SAÍDAS DO STOCK -->
             <div style="background:#fff; border:1px solid #dee2e6; padding:15px; border-radius:8px;">
                 <h4 style="margin-top:0;">📋 Histórico Completo de Movimentações do Stock (Entradas e Saídas)</h4>
                 <div class="table-responsive">
@@ -584,7 +591,7 @@
     </div>
 </div>
 
-<!-- MODAL REDEFINIR PALAVRA-PASSE EXCLUSIVAMENTE VIA CHAVE MESTRA -->
+<!-- MODAL REDEFINIR PALAVRA-PASSE SEGURA -->
 <div id="modalResetSenha" class="modal">
     <div class="modal-content">
         <span class="close-modal" onclick="fecharModalResetSenha()">&times;</span>
@@ -701,7 +708,7 @@
     </div>
 </div>
 
-<!-- LÓGICA JAVASCRIPT & FIREBASE -->
+<!-- LÓGICA JAVASCRIPT & FIREBASE MULTI-TENANT -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -718,7 +725,8 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Estado da Aplicação
+    // Estado da Aplicação Multi-Tenant
+    let codigoEmpresa = "";
     let usuarios = {}, stock = {}, historico = [], clientes = [], despesas = [], movimentacoesStock = [];
     let mesas = { "Balcão": [] };
     for(let i=1; i<=10; i++) mesas[`Mesa ${i}`] = [];
@@ -728,58 +736,88 @@
     let usuarioAtual = null;
     let mesaSelecionada = "Balcão";
     let chartInstance = null;
+    let unsubscribes = [];
 
-    // Escuta Firebase em Tempo Real
-    onSnapshot(doc(db, "sistema", "usuarios"), (docSnap) => {
-        usuarios = docSnap.exists() ? docSnap.data() : { "admin": { senha: "123", tipo: "admin", foto: "" } };
-        verificarEstadoInicial();
-        renderizarPerfisLogin();
-        if (usuarioAtual && usuarioAtual.tipo === 'admin') renderizarUsuarios();
-    });
+    // Ligar aos dados isolados da empresa selecionada
+    window.carregarPerfisEmpresa = function() {
+        let codeInput = document.getElementById('loginCodigoEmpresa').value.trim().toUpperCase();
+        if(!codeInput) return alert("Por favor, introduza o Código do Restaurante!");
 
-    onSnapshot(doc(db, "sistema", "stock"), (docSnap) => {
-        stock = docSnap.exists() ? docSnap.data() : {};
-        if (usuarioAtual) { atualizarDropdownProdutosCart(); renderizarStock(); verificarAlertasStock(); }
-    });
+        codigoEmpresa = codeInput;
+        desconectarEscutadores();
 
-    onSnapshot(doc(db, "sistema", "movimentacoes_stock"), (docSnap) => {
-        movimentacoesStock = docSnap.exists() ? (docSnap.data().lista || []) : [];
-        if (usuarioAtual) renderizarMovimentacoesStock();
-    });
+        document.getElementById('seccaoPerfisEForm').style.display = 'block';
 
-    onSnapshot(doc(db, "sistema", "historico"), (docSnap) => {
-        historico = docSnap.exists() ? (docSnap.data().lista || []) : [];
-        if (usuarioAtual) {
-            atualizarDashboard();
-            if (usuarioAtual.tipo === 'admin') renderizarUsuarios();
-        }
-    });
+        // Listener de Utilizadores da Empresa
+        let unsubUser = onSnapshot(doc(db, "empresas", codigoEmpresa, "dados", "usuarios"), async (docSnap) => {
+            if (docSnap.exists()) {
+                usuarios = docSnap.data();
+            } else {
+                // Se a empresa é nova, cria o perfil Admin padrão
+                usuarios = { "admin": { senha: "123", tipo: "admin", foto: "" } };
+                await setDoc(doc(db, "empresas", codigoEmpresa, "dados", "usuarios"), usuarios);
+            }
+            renderizarPerfisLogin();
+            if (usuarioAtual && usuarioAtual.tipo === 'admin') renderizarUsuarios();
+        });
 
-    onSnapshot(doc(db, "sistema", "clientes"), (docSnap) => {
-        clientes = docSnap.exists() ? (docSnap.data().lista || []) : [];
-        if (usuarioAtual) { renderizarClientes(); atualizarDropdownClientesFiado(); }
-    });
+        unsubscribes.push(unsubUser);
+    };
 
-    onSnapshot(doc(db, "sistema", "caixa"), (docSnap) => {
-        caixaEstado = docSnap.exists() ? docSnap.data() : { aberto: false, fundo: 0 };
-        if (usuarioAtual) renderizarEstadoCaixa();
-    });
+    function iniciarEscutadoresCompletosEmpresa() {
+        if(!codigoEmpresa) return;
 
-    onSnapshot(doc(db, "sistema", "despesas"), (docSnap) => {
-        despesas = docSnap.exists() ? (docSnap.data().lista || []) : [];
-        if (usuarioAtual) renderizarEstadoCaixa();
-    });
+        // Stock
+        unsubscribes.push(onSnapshot(doc(db, "empresas", codigoEmpresa, "dados", "stock"), (docSnap) => {
+            stock = docSnap.exists() ? docSnap.data() : {};
+            if (usuarioAtual) { atualizarDropdownProdutosCart(); renderizarStock(); verificarAlertasStock(); }
+        }));
 
-    onSnapshot(doc(db, "sistema", "empresa"), (docSnap) => {
-        if (docSnap.exists()) {
-            dadosEmpresa = docSnap.data();
-            preencherCamposEmpresaModal();
-        }
-    });
+        // Movimentações Stock
+        unsubscribes.push(onSnapshot(doc(db, "empresas", codigoEmpresa, "dados", "movimentacoes_stock"), (docSnap) => {
+            movimentacoesStock = docSnap.exists() ? (docSnap.data().lista || []) : [];
+            if (usuarioAtual) renderizarMovimentacoesStock();
+        }));
 
-    function verificarEstadoInicial() {
-        document.getElementById('loadingNuvem').style.display = 'none';
-        if (!usuarioAtual) document.getElementById('telaLogin').style.display = 'block';
+        // Histórico
+        unsubscribes.push(onSnapshot(doc(db, "empresas", codigoEmpresa, "dados", "historico"), (docSnap) => {
+            historico = docSnap.exists() ? (docSnap.data().lista || []) : [];
+            if (usuarioAtual) {
+                atualizarDashboard();
+                if (usuarioAtual.tipo === 'admin') renderizarUsuarios();
+            }
+        }));
+
+        // Clientes
+        unsubscribes.push(onSnapshot(doc(db, "empresas", codigoEmpresa, "dados", "clientes"), (docSnap) => {
+            clientes = docSnap.exists() ? (docSnap.data().lista || []) : [];
+            if (usuarioAtual) { renderizarClientes(); atualizarDropdownClientesFiado(); }
+        }));
+
+        // Caixa
+        unsubscribes.push(onSnapshot(doc(db, "empresas", codigoEmpresa, "dados", "caixa"), (docSnap) => {
+            caixaEstado = docSnap.exists() ? docSnap.data() : { aberto: false, fundo: 0 };
+            if (usuarioAtual) renderizarEstadoCaixa();
+        }));
+
+        // Despesas
+        unsubscribes.push(onSnapshot(doc(db, "empresas", codigoEmpresa, "dados", "despesas"), (docSnap) => {
+            despesas = docSnap.exists() ? (docSnap.data().lista || []) : [];
+            if (usuarioAtual) renderizarEstadoCaixa();
+        }));
+
+        // Empresa
+        unsubscribes.push(onSnapshot(doc(db, "empresas", codigoEmpresa, "dados", "empresa"), (docSnap) => {
+            if (docSnap.exists()) {
+                dadosEmpresa = docSnap.data();
+                preencherCamposEmpresaModal();
+            }
+        }));
+    }
+
+    function desconectarEscutadores() {
+        unsubscribes.forEach(unsub => unsub());
+        unsubscribes = [];
     }
 
     // RENDERIZAR PERFIS NA PÁGINA DE ENTRADA (LOGIN)
@@ -815,8 +853,12 @@
         let u = document.getElementById('loginUser').value.trim().toLowerCase();
         let p = document.getElementById('loginPass').value;
 
+        if(!codigoEmpresa) return alert("Insira primeiro o Código do Restaurante.");
+
         if (usuarios[u] && usuarios[u].senha === p) {
             usuarioAtual = { nome: u, tipo: usuarios[u].tipo, foto: usuarios[u].foto || "" };
+            
+            document.getElementById('nomeEmpresaHeader').innerText = codigoEmpresa;
             document.getElementById('nomeUsuarioLogado').innerText = u;
             document.getElementById('cargoUsuarioLogado').innerText = usuarios[u].tipo === 'admin' ? 'Administrador' : 'Operador de Caixa';
             
@@ -830,6 +872,7 @@
             document.getElementById('telaLogin').style.display = 'none';
             document.getElementById('telaSistema').style.display = 'block';
             
+            iniciarEscutadoresCompletosEmpresa();
             configurarPerfil();
             renderizarMesasGrid();
             atualizarDropdownProdutosCart();
@@ -846,16 +889,14 @@
 
     window.fazerLogout = function() {
         usuarioAtual = null;
+        desconectarEscutadores();
         document.getElementById('telaSistema').style.display = 'none';
         document.getElementById('telaLogin').style.display = 'block';
         document.getElementById('loginPass').value = '';
     };
 
-    // REDEFINIR PALAVRA-PASSE SEGURA (EXCLUSIVAMENTE COM CHAVE MESTRA)
-    window.abrirModalResetSenha = function() {
-        document.getElementById('modalResetSenha').style.display = 'block';
-    };
-
+    // REDEFINIR PALAVRA-PASSE SEGURA
+    window.abrirModalResetSenha = function() { document.getElementById('modalResetSenha').style.display = 'block'; };
     window.fecharModalResetSenha = function() {
         document.getElementById('modalResetSenha').style.display = 'none';
         document.getElementById('resetUsuarioNome').value = '';
@@ -868,21 +909,18 @@
         let chaveEntrada = document.getElementById('resetChaveMestraInput').value.trim();
         let novaP = document.getElementById('resetNovaSenha').value;
 
-        if (!u || !chaveEntrada || !novaP) return alert("Preencha todos os campos do formulário.");
-
-        if (!usuarios[u]) {
-            return alert("Utilizador não encontrado no sistema.");
-        }
+        if (!u || !chaveEntrada || !novaP) return alert("Preencha todos os campos.");
+        if (!usuarios[u]) return alert("Utilizador não encontrado.");
 
         let chaveMestraCadastrada = (dadosEmpresa.chaveMestra || "1234").trim();
 
         if (chaveEntrada === chaveMestraCadastrada) {
             usuarios[u].senha = novaP;
-            await setDoc(doc(db, "sistema", "usuarios"), usuarios);
-            alert(`A palavra-passe do utilizador '${u.toUpperCase()}' foi alterada com sucesso!`);
+            await setDoc(doc(db, "empresas", codigoEmpresa, "dados", "usuarios"), usuarios);
+            alert(`A palavra-passe de '${u.toUpperCase()}' foi alterada com sucesso!`);
             fecharModalResetSenha();
         } else {
-            alert("Chave Mestra Incorreta! Apenas o Administrador pode redefinir a palavra-passe.");
+            alert("Chave Mestra Incorreta!");
         }
     };
 
@@ -904,7 +942,7 @@
         if(abaId === 'abaUsuarios' && usuarioAtual.tipo === 'admin') renderizarUsuarios();
     };
 
-    // GESTÃO DE PERFIS, FOTOS & UTILIZADORES (ADMIN)
+    // GESTÃO DE PERFIS & FOTOS
     function processarFotoAvatar(file, callback) {
         if (!file) return callback("");
         let reader = new FileReader();
@@ -934,7 +972,7 @@
 
         processarFotoAvatar(fileInput, async function(fotoBase64) {
             usuarios[u] = { senha: p, tipo: t, foto: fotoBase64 };
-            await setDoc(doc(db, "sistema", "usuarios"), usuarios);
+            await setDoc(doc(db, "empresas", codigoEmpresa, "dados", "usuarios"), usuarios);
             
             document.getElementById('novoUserNome').value = '';
             document.getElementById('novoUserSenha').value = '';
@@ -946,10 +984,10 @@
     };
 
     window.apagarUsuario = async function(u) {
-        if(u === usuarioAtual.nome) return alert("Não pode apagar o seu próprio perfil ligado no momento!");
+        if(u === usuarioAtual.nome) return alert("Não pode apagar o seu próprio perfil!");
         if(confirm(`Tem certeza que deseja eliminar o perfil '${u.toUpperCase()}'?`)) {
             delete usuarios[u];
-            await setDoc(doc(db, "sistema", "usuarios"), usuarios);
+            await setDoc(doc(db, "empresas", codigoEmpresa, "dados", "usuarios"), usuarios);
             renderizarUsuarios();
             renderizarPerfisLogin();
         }
@@ -957,17 +995,17 @@
 
     window.redefinirSenhaDiretaAdmin = async function(u) {
         if(usuarioAtual.tipo !== 'admin') return alert("Apenas o Administrador pode redefinir senhas!");
-        let novaS = prompt(`ADMINISTRADOR: Digite a nova palavra-passe para o perfil '${u.toUpperCase()}':`);
+        let novaS = prompt(`ADMINISTRADOR: Digite a nova palavra-passe para '${u.toUpperCase()}':`);
         if(novaS && novaS.trim() !== "") {
             usuarios[u].senha = novaS.trim();
-            await setDoc(doc(db, "sistema", "usuarios"), usuarios);
+            await setDoc(doc(db, "empresas", codigoEmpresa, "dados", "usuarios"), usuarios);
             alert(`Palavra-passe de ${u.toUpperCase()} alterada com sucesso!`);
             renderizarUsuarios();
         }
     };
 
     window.alterarFotoUsuarioAdmin = function(u) {
-        if(usuarioAtual.tipo !== 'admin') return alert("Apenas o Administrador pode alterar fotos de perfil!");
+        if(usuarioAtual.tipo !== 'admin') return alert("Apenas o Administrador pode alterar fotos!");
         let input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
@@ -976,7 +1014,7 @@
             processarFotoAvatar(file, async function(fotoBase64) {
                 if(fotoBase64) {
                     usuarios[u].foto = fotoBase64;
-                    await setDoc(doc(db, "sistema", "usuarios"), usuarios);
+                    await setDoc(doc(db, "empresas", codigoEmpresa, "dados", "usuarios"), usuarios);
                     alert(`Foto de perfil de '${u.toUpperCase()}' atualizada!`);
                     renderizarUsuarios();
                     renderizarPerfisLogin();
@@ -1081,14 +1119,14 @@
     window.abrirCaixaTurno = async function() {
         let fundo = parseFloat(document.getElementById('inputFundoManeio').value) || 0;
         caixaEstado = { aberto: true, fundo, timestampAbertura: Date.now(), usuario: usuarioAtual.nome };
-        await setDoc(doc(db, "sistema", "caixa"), caixaEstado);
+        await setDoc(doc(db, "empresas", codigoEmpresa, "dados", "caixa"), caixaEstado);
         alert("Caixa aberto com sucesso!");
     };
 
     window.fecharCaixaTurno = async function() {
         if(confirm("Deseja encerrar o turno do caixa e emitir o fecho?")) {
             caixaEstado = { aberto: false, fundo: 0 };
-            await setDoc(doc(db, "sistema", "caixa"), caixaEstado);
+            await setDoc(doc(db, "empresas", codigoEmpresa, "dados", "caixa"), caixaEstado);
             alert("Caixa encerrado com sucesso!");
         }
     };
@@ -1099,7 +1137,7 @@
         if(!desc || val <= 0) return alert("Preencha a descrição e valor.");
 
         despesas.push({ id: Date.now(), desc, valor: val, usuario: usuarioAtual.nome, timestamp: Date.now(), data: new Date().toLocaleString('pt-MZ') });
-        await setDoc(doc(db, "sistema", "despesas"), { lista: despesas });
+        await setDoc(doc(db, "empresas", codigoEmpresa, "dados", "despesas"), { lista: despesas });
         document.getElementById('despesaDesc').value = '';
         document.getElementById('despesaValor').value = '';
         alert("Despesa registada!");
@@ -1199,7 +1237,6 @@
             if(!clienteFiado) return alert("Selecione o cliente para registar o fiado.");
         }
 
-        // Abater do Stock e Registo da Saída no Histórico
         for(let item of itens) {
             stock[item.produto].qtd -= item.qtd;
             stock[item.produto].preco_total -= (item.qtd * item.custoUnit);
@@ -1234,20 +1271,20 @@
             let cIdx = clientes.findIndex(c => c.nome === clienteFiado);
             if(cIdx !== -1) {
                 clientes[cIdx].divida = (clientes[cIdx].divida || 0) + totalVenda;
-                await setDoc(doc(db, "sistema", "clientes"), { lista: clientes });
+                await setDoc(doc(db, "empresas", codigoEmpresa, "dados", "clientes"), { lista: clientes });
             }
         }
 
         historico.push(registo);
-        await setDoc(doc(db, "sistema", "stock"), stock);
-        await setDoc(doc(db, "sistema", "movimentacoes_stock"), { lista: movimentacoesStock });
-        await setDoc(doc(db, "sistema", "historico"), { lista: historico });
+        await setDoc(doc(db, "empresas", codigoEmpresa, "dados", "stock"), stock);
+        await setDoc(doc(db, "empresas", codigoEmpresa, "dados", "movimentacoes_stock"), { lista: movimentacoesStock });
+        await setDoc(doc(db, "empresas", codigoEmpresa, "dados", "historico"), { lista: historico });
 
         imprimirTalão(registo);
 
         let telWa = document.getElementById('cartTelefoneWa').value.trim();
         if(telWa) {
-            let msg = `*${dadosEmpresa.nome}*%0ARecibo: ${registo.data}%0AMesa: ${mesaSelecionada}%0ATotal: ${totalVenda.toFixed(2)} MT%0A*Obrigado!*`;
+            let msg = `*${dadosEmpresa.nome || 'RESTAURANTE'}*%0ARecibo: ${registo.data}%0AMesa: ${mesaSelecionada}%0ATotal: ${totalVenda.toFixed(2)} MT%0A*Obrigado!*`;
             window.open(`https://wa.me/${telWa}?text=${msg}`, '_blank');
         }
 
@@ -1315,7 +1352,7 @@
         if(!nome) return alert("Introduza o nome do cliente.");
 
         clientes.push({ id: Date.now(), nome, telefone: tel, divida: 0 });
-        await setDoc(doc(db, "sistema", "clientes"), { lista: clientes });
+        await setDoc(doc(db, "empresas", codigoEmpresa, "dados", "clientes"), { lista: clientes });
         document.getElementById('novoClienteNome').value = '';
         document.getElementById('novoClienteTelefone').value = '';
         renderizarClientes();
@@ -1342,7 +1379,7 @@
         let val = parseFloat(prompt(`Liquidar quanto da dívida de ${c.nome}? (Dívida total: ${c.divida} MT)`, c.divida));
         if(val > 0) {
             c.divida = Math.max(0, c.divida - val);
-            await setDoc(doc(db, "sistema", "clientes"), { lista: clientes });
+            await setDoc(doc(db, "empresas", codigoEmpresa, "dados", "clientes"), { lista: clientes });
             alert("Pagamento registado!");
         }
     };
@@ -1421,7 +1458,6 @@
         stock[prod].min_alerta = minAlerta;
         if(precoVendaUnit > 0) stock[prod].preco_venda = precoVendaUnit;
 
-        // Registo da Entrada no Histórico de Movimentações
         movimentacoesStock.push({
             data: new Date().toLocaleString('pt-MZ'),
             tipo: 'ENTRADA (COMPRA)',
@@ -1431,8 +1467,8 @@
             origem: modoCompra === 'caixa' ? 'Compra por Caixa/Fardo' : 'Compra Avulsa'
         });
 
-        await setDoc(doc(db, "sistema", "stock"), stock);
-        await setDoc(doc(db, "sistema", "movimentacoes_stock"), { lista: movimentacoesStock });
+        await setDoc(doc(db, "empresas", codigoEmpresa, "dados", "stock"), stock);
+        await setDoc(doc(db, "empresas", codigoEmpresa, "dados", "movimentacoes_stock"), { lista: movimentacoesStock });
 
         document.getElementById('simplesProduto').value = '';
         alert("Stock e histórico atualizados!");
@@ -1537,7 +1573,6 @@
         document.getElementById('dashDespesasGerais').innerText = totalDesp.toFixed(2) + " MT";
         document.getElementById('dashLucroReal').innerText = (totalVendas - totalCOGS - totalDesp).toFixed(2) + " MT";
 
-        // Top Produtos
         let topSorted = Object.entries(topProds).sort((a,b) => b[1] - a[1]).slice(0, 5);
         let divTop = document.getElementById('listaTopProdutos');
         divTop.innerHTML = '';
@@ -1548,7 +1583,6 @@
             </div>`;
         });
 
-        // Tabela Histórico Admin
         let tbodyHist = document.getElementById('corpoHistoricoAdmin');
         tbodyHist.innerHTML = '';
         histFiltrado.slice(-20).reverse().forEach(h => {
@@ -1582,7 +1616,7 @@
         });
     }
 
-    // EXPORTAÇÃO DE BACKUP SEGURO (REMOVE AUTOMATICAMENTE TODAS AS PALAVRAS-PASSE)
+    // BACKUP SEGURO
     window.fazerBackup = function() {
         let usuariosSemSenhas = {};
         for(let u in usuarios) {
@@ -1590,6 +1624,7 @@
         }
 
         let backupData = {
+            codigoEmpresa,
             usuarios: usuariosSemSenhas,
             stock,
             movimentacoesStock,
@@ -1609,7 +1644,7 @@
         let blob = new Blob([JSON.stringify(backupData, null, 2)], { type: "application/json" });
         let a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `backup_restaurante_seguro_${Date.now()}.json`;
+        a.download = `backup_${codigoEmpresa}_${Date.now()}.json`;
         a.click();
         URL.revokeObjectURL(a.href);
     };
@@ -1627,6 +1662,7 @@
     // EXPORTAR EXCEL
     window.exportarVendasExcel = function() {
         let dadosExcel = historico.map(item => ({
+            "Empresa": codigoEmpresa,
             "Data": item.data,
             "Utilizador": item.usuario,
             "Mesa": item.mesa || "Balcão",
@@ -1637,7 +1673,7 @@
         let ws = XLSX.utils.json_to_sheet(dadosExcel);
         let wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Vendas");
-        XLSX.writeFile(wb, `Vendas_${Date.now()}.xlsx`);
+        XLSX.writeFile(wb, `Vendas_${codigoEmpresa}_${Date.now()}.xlsx`);
     };
 
     window.exportarStockExcel = function() {
@@ -1646,6 +1682,7 @@
             let item = stock[p];
             let custoMedio = item.qtd > 0 ? (item.preco_total / item.qtd) : 0;
             dadosStock.push({
+                "Empresa": codigoEmpresa,
                 "Produto": p.toUpperCase(),
                 "Stock": item.qtd,
                 "Custo Unit. (MT)": custoMedio.toFixed(2),
@@ -1655,7 +1692,7 @@
         let ws = XLSX.utils.json_to_sheet(dadosStock);
         let wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Stock");
-        XLSX.writeFile(wb, `Stock_${Date.now()}.xlsx`);
+        XLSX.writeFile(wb, `Stock_${codigoEmpresa}_${Date.now()}.xlsx`);
     };
 
     // DEFINIÇÕES & DADOS DA EMPRESA
@@ -1685,7 +1722,7 @@
             slogan: document.getElementById('cfgSlogan').value.trim(),
             chaveMestra: document.getElementById('cfgChaveMestra').value.trim() || '1234'
         };
-        await setDoc(doc(db, "sistema", "empresa"), dadosEmpresa);
+        await setDoc(doc(db, "empresas", codigoEmpresa, "dados", "empresa"), dadosEmpresa);
         alert("Dados salvos com sucesso!");
     };
 
@@ -1693,14 +1730,14 @@
         let p = document.getElementById('inputNovaSenha').value;
         if(!p) return alert("Digite a nova palavra-passe.");
         usuarios[usuarioAtual.nome].senha = p;
-        await setDoc(doc(db, "sistema", "usuarios"), usuarios);
+        await setDoc(doc(db, "empresas", codigoEmpresa, "dados", "usuarios"), usuarios);
         alert("Palavra-passe alterada!");
     };
 
     window.apagarProduto = async function(p) {
         if(confirm(`Apagar ${p.toUpperCase()}?`)) {
             delete stock[p];
-            await setDoc(doc(db, "sistema", "stock"), stock);
+            await setDoc(doc(db, "empresas", codigoEmpresa, "dados", "stock"), stock);
         }
     };
 </script>
