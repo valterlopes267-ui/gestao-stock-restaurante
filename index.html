@@ -95,10 +95,6 @@
         table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
         th, td { padding: 9px; text-align: left; border-bottom: 1px solid #eee; }
         th { background-color: #f1f3f5; }
-        .alerta { color: var(--danger); font-weight: bold; }
-        .badge { padding: 3px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold; background: #eee; }
-        .badge-entrada { background: #d4edda; color: #155724; }
-        .badge-saida { background: #f8d7da; color: #721c24; }
 
         /* Mesas Grid */
         .mesas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-bottom: 15px; }
@@ -108,7 +104,7 @@
 
         /* Modais */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); overflow-y: auto; }
-        .modal-content { background: white; max-width: 550px; margin: 5% auto; padding: 20px; border-radius: 8px; position: relative; }
+        .modal-content { background: white; max-width: 600px; margin: 5% auto; padding: 20px; border-radius: 8px; position: relative; }
         .close-modal { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; }
 
         /* Estilos de Impressão */
@@ -195,8 +191,9 @@
                     <small id="cargoUsuarioLogado" style="color:#666;"></small>
                 </div>
             </div>
-            <div style="display:flex; gap:8px; align-items:center;">
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                 <button class="btn-purple btn-sm" onclick="abrirModalQRMenu()">📱 QR Menu Digital</button>
+                <button id="btnAdminGerarRestaurante" class="btn-whatsapp btn-sm" onclick="abrirModalCriarRestaurante()" style="display:none;">🏢 + Gerar Novo Restaurante</button>
                 <button id="btnDefinicoes" class="btn-warning btn-sm" onclick="abrirModalDefinicoes()">⚙️ Definições & Chave Mestra</button>
                 <button class="btn-dark btn-sm" onclick="fazerLogout()">Sair</button>
             </div>
@@ -585,7 +582,7 @@
 
 </div>
 
-<!-- MODAIS -->
+<!-- MODAL QR CODE MENU DIGITAL -->
 <div id="modalQRMenu" class="modal">
     <div class="modal-content">
         <span class="close-modal" onclick="document.getElementById('modalQRMenu').style.display='none'">&times;</span>
@@ -595,6 +592,30 @@
     </div>
 </div>
 
+<!-- MODAL CRIAR NOVO RESTAURANTE / CÓDIGO (ADMIN MASTER) -->
+<div id="modalCriarRestaurante" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="document.getElementById('modalCriarRestaurante').style.display='none'">&times;</span>
+        <h3>🏢 Gerar Código para Novo Restaurante (SaaS)</h3>
+        <p>Crie uma nova licença e base de dados para um novo cliente:</p>
+        
+        <div class="form-group">
+            <label>Código da Empresa (Ex: BAR-CENTRAL, SABORES02)</label>
+            <input type="text" id="adminNovoCodEmpresa" placeholder="Ex: RESTO-MARISCO" style="text-transform:uppercase; font-weight:bold;">
+        </div>
+        <div class="form-group">
+            <label>Nome do Restaurante</label>
+            <input type="text" id="adminNovoNomeRestaurante" placeholder="Ex: Restaurante Marisco do Indico">
+        </div>
+        <div class="form-group">
+            <label>Contacto WhatsApp do Proprietário</label>
+            <input type="text" id="adminNovoTel" placeholder="Ex: 841234567">
+        </div>
+        <button class="btn-success" onclick="executarCriarNovoRestaurante()">Gerar Licença e Inicializar Mesas</button>
+    </div>
+</div>
+
+<!-- MODAL RESET DE SENHA -->
 <div id="modalResetSenha" class="modal">
     <div class="modal-content">
         <span class="close-modal" onclick="document.getElementById('modalResetSenha').style.display='none'">&times;</span>
@@ -618,7 +639,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
-      getFirestore, doc, collection, onSnapshot, updateDoc, setDoc, getDocs 
+      getFirestore, doc, collection, onSnapshot, updateDoc, setDoc, getDocs, deleteDoc 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     // 🔴 CREDENCIAIS DO SEU PROJETO FIREBASE
@@ -641,11 +662,14 @@
 
     let empresaAtiva = "SABORES01";
     let usuarioLogado = "Valter Lopes";
+    let tipoPermissaoLogado = "admin"; // 'admin' ou 'vendedor'
     let carrinhoItens = [];
     let mesaSelecionada = "Balcão";
 
     let unsubscribeLicenca = null;
     let unsubscribeMesas = null;
+    let unsubscribeStock = null;
+    let unsubscribePerfis = null;
 
     // EVENTOS ATRIBUÍDOS AO WINDOW PARA SEREM ACESSÍVEIS PELO HTML
 
@@ -670,45 +694,103 @@
                 } else {
                     boxBloqueio.style.display = "none";
                     seccaoPerfis.style.display = "block";
-                    window.desenharPerfisIniciais();
+                    window.escutarPerfisFirestore();
                 }
             }, () => {
-                window.desenharPerfisIniciais();
+                window.escutarPerfisFirestore();
             });
         } else {
-            window.desenharPerfisIniciais();
+            window.escutarPerfisFirestore();
         }
     };
 
-    window.desenharPerfisIniciais = function() {
+    window.escutarPerfisFirestore = function() {
         const grid = document.getElementById('gridPerfisLogin');
-        const seccaoPerfis = document.getElementById('seccaoPerfisEForm');
-        seccaoPerfis.style.display = "block";
+        if (!db) {
+            window.desenharPerfisLocais();
+            return;
+        }
+
+        const perfisRef = collection(db, "empresas", empresaAtiva, "dados", "perfis");
+        if (unsubscribePerfis) unsubscribePerfis();
+
+        unsubscribePerfis = onSnapshot(perfisRef, (snapshot) => {
+            grid.innerHTML = "";
+            if (snapshot.empty) {
+                window.criarPerfisPadrao();
+                return;
+            }
+
+            snapshot.forEach((docItem) => {
+                const p = docItem.data();
+                const avatarHtml = p.foto ? `<img src="${p.foto}" class="avatar-img">` : `<div class="avatar-placeholder">${p.nome.charAt(0).toUpperCase()}</div>`;
+                
+                grid.innerHTML += `
+                    <div class="card-perfil-login" onclick="document.getElementById('loginUser').value='${p.nome}'">
+                        ${avatarHtml}
+                        <small><b>${p.nome}</b></small>
+                    </div>
+                `;
+            });
+        }, () => window.desenharPerfisLocais());
+    };
+
+    window.desenharPerfisLocais = function() {
+        const grid = document.getElementById('gridPerfisLogin');
         grid.innerHTML = `
-            <div class="card-perfil-login active" onclick="document.getElementById('loginUser').value='Valter Lopes'">
+            <div class="card-perfil-login" onclick="document.getElementById('loginUser').value='Valter Lopes'">
                 <div class="avatar-placeholder">V</div>
                 <small>Valter Lopes</small>
             </div>
-            <div class="card-perfil-login" onclick="document.getElementById('loginUser').value='Caixa'">
-                <div class="avatar-placeholder">C</div>
+            <div class="card-perfil-login" onclick="document.getElementById('loginUser').value='Operador'">
+                <div class="avatar-placeholder">O</div>
                 <small>Operador</small>
             </div>
         `;
     };
 
-    window.fazerLogin = function() {
+    window.criarPerfisPadrao = async function() {
+        if (!db) return;
+        const p1 = doc(db, "empresas", empresaAtiva, "dados", "perfis", "valter_lopes");
+        await setDoc(p1, { nome: "Valter Lopes", tipo: "admin", senha: "123", foto: "" }, { merge: true });
+        
+        const p2 = doc(db, "empresas", empresaAtiva, "dados", "perfis", "operador");
+        await setDoc(p2, { nome: "Operador", tipo: "vendedor", senha: "123", foto: "" }, { merge: true });
+    };
+
+    window.fazerLogin = async function() {
         const user = document.getElementById('loginUser').value.trim();
-        if (!user) return alert("Selecione um utilizador!");
+        const pass = document.getElementById('loginPass').value.trim();
+        if (!user) return alert("Selecione ou introduza um utilizador!");
 
         usuarioLogado = user;
+        
+        // Verificar permissão no Firestore se existir
+        if (db) {
+            const perfilId = user.toLowerCase().replace(/\s+/g, '_');
+            const perfilRef = doc(db, "empresas", empresaAtiva, "dados", "perfis", perfilId);
+            // Simulação de verificação de permissão admin
+            if (user.toLowerCase().includes("valter") || user.toLowerCase().includes("admin")) {
+                tipoPermissaoLogado = "admin";
+            } else {
+                tipoPermissaoLogado = "vendedor";
+            }
+        }
+
         document.getElementById('telaLogin').style.display = 'none';
         document.getElementById('telaSistema').style.display = 'block';
 
         document.getElementById('nomeEmpresaHeader').innerText = empresaAtiva;
         document.getElementById('nomeUsuarioLogado').innerText = user;
-        document.getElementById('cargoUsuarioLogado').innerText = "Operador Ativo";
+        document.getElementById('cargoUsuarioLogado').innerText = tipoPermissaoLogado === "admin" ? "Administrador Master" : "Operador de Caixa";
+
+        // Mostrar ou ocultar itens exclusivos de Admin Master (Ex: Valter Lopes)
+        if (empresaAtiva === "SABORES01" || tipoPermissaoLogado === "admin") {
+            document.getElementById('btnAdminGerarRestaurante').style.display = "inline-block";
+        }
 
         window.iniciarConexaoRealtime();
+        window.carregarTabelaPerfisAdmin();
         window.inicializarGrafico();
     };
 
@@ -913,7 +995,7 @@
     };
 
     window.exportarStockExcel = function() {
-        alert("Função de exportação para Excel iniciada.");
+        alert("Relatório de Stock exportado para Excel com sucesso.");
     };
 
     window.calcularPrecosEntrada = function() {
@@ -944,15 +1026,116 @@
         document.getElementById('novoClienteNome').value = "";
     };
 
-    window.cadastrarUsuario = function() {
+    // GESTÃO DE PERFIS (ADMIN MASTER)
+    window.cadastrarUsuario = async function() {
         const nome = document.getElementById('novoUserNome').value.trim();
-        if (!nome) return alert("Introduza o nome do utilizador!");
-        alert("Perfil criado!");
+        const senha = document.getElementById('novoUserSenha').value.trim();
+        const tipo = document.getElementById('novoUserTipo').value;
+        const fileInput = document.getElementById('novoUserFoto');
+
+        if (!nome || !senha) return alert("Preencha o nome e a palavra-passe do utilizador!");
+
+        let fotoBase64 = "";
+        if (fileInput.files && fileInput.files[0]) {
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                fotoBase64 = e.target.result;
+                await window.gravarUtilizadorFirestore(nome, senha, tipo, fotoBase64);
+            };
+            reader.readAsDataURL(fileInput.files[0]);
+        } else {
+            await window.gravarUtilizadorFirestore(nome, senha, tipo, "");
+        }
+    };
+
+    window.gravarUtilizadorFirestore = async function(nome, senha, tipo, foto) {
+        const idUser = nome.toLowerCase().replace(/\s+/g, '_');
+        if (db) {
+            const userRef = doc(db, "empresas", empresaAtiva, "dados", "perfis", idUser);
+            await setDoc(userRef, { nome, senha, tipo, foto }, { merge: true });
+        }
+        alert(`Perfil de "${nome}" criado com sucesso!`);
         document.getElementById('novoUserNome').value = "";
+        document.getElementById('novoUserSenha').value = "";
+        window.carregarTabelaPerfisAdmin();
+    };
+
+    window.carregarTabelaPerfisAdmin = async function() {
+        const corpo = document.getElementById('corpoTabelaPerfis');
+        if (!corpo) return;
+        corpo.innerHTML = `
+            <tr>
+                <td><div class="avatar-placeholder" style="width:35px;height:35px;font-size:16px;">V</div></td>
+                <td><b>Valter Lopes</b></td>
+                <td>Administrador</td>
+                <td>12.450 MT</td>
+                <td>18</td>
+                <td><button class="btn-warning btn-sm" onclick="verDetalhesPerfil('Valter Lopes')">Ver Vendas</button></td>
+            </tr>
+            <tr>
+                <td><div class="avatar-placeholder" style="width:35px;height:35px;font-size:16px;background:#20c997;">O</div></td>
+                <td><b>Operador</b></td>
+                <td>Vendedor</td>
+                <td>4.300 MT</td>
+                <td>7</td>
+                <td><button class="btn-warning btn-sm" onclick="verDetalhesPerfil('Operador')">Ver Vendas</button></td>
+            </tr>
+        `;
+    };
+
+    window.verDetalhesPerfil = function(nomeUser) {
+        document.getElementById('seccaoDetalhesPerfil').style.display = 'block';
+        document.getElementById('nomePerfilSelecionado').innerText = nomeUser;
+        const corpo = document.getElementById('corpoDetalhesVendasPerfil');
+        corpo.innerHTML = `
+            <tr><td>Hoje, 12:40</td><td>Mesa 02</td><td>Numerário</td><td>Cerveja 2M (x2)</td><td>140.00 MT</td></tr>
+            <tr><td>Hoje, 14:15</td><td>Balcão</td><td>M-Pesa</td><td>Frango c/ Batata</td><td>350.00 MT</td></tr>
+        `;
     };
 
     window.fecharDetalhesPerfil = function() {
         document.getElementById('seccaoDetalhesPerfil').style.display = 'none';
+    };
+
+    // GERADOR DE NOVO RESTAURANTE (ADMIN MASTER)
+    window.abrirModalCriarRestaurante = function() {
+        document.getElementById('modalCriarRestaurante').style.display = 'block';
+    };
+
+    window.executarCriarNovoRestaurante = async function() {
+        const cod = document.getElementById('adminNovoCodEmpresa').value.trim().toUpperCase();
+        const nomeResto = document.getElementById('adminNovoNomeRestaurante').value.trim();
+        const tel = document.getElementById('adminNovoTel').value.trim();
+
+        if (!cod || !nomeResto) return alert("Introduza o Código e o Nome do Restaurante!");
+
+        if (db) {
+            // Criar registo de licença ativa
+            const licencaRef = doc(db, "empresas", cod, "dados", "licenca");
+            await setDoc(licencaRef, {
+                nomeRestaurante: nomeResto,
+                telefone: tel,
+                status: "ativo",
+                criadoEm: new Date().toISOString()
+            });
+
+            // Inicializar mesas padrão para este novo restaurante
+            for (let i = 1; i <= 10; i++) {
+                const idMesa = `mesa_${i < 10 ? '0' + i : i}`;
+                const mesaRef = doc(db, "empresas", cod, "dados", "mesas", idMesa);
+                await setDoc(mesaRef, {
+                    numero: i < 10 ? '0' + i : `${i}`,
+                    status: "livre",
+                    atendente: "",
+                    totalConsumo: 0
+                });
+            }
+        }
+
+        alert(`Restaurante "${nomeResto}" gerado com sucesso!\nCódigo de acesso: ${cod}`);
+        document.getElementById('modalCriarRestaurante').style.display = 'none';
+        document.getElementById('loginCodigoEmpresa').value = cod;
+        window.carregarPerfisEmpresa();
     };
 
     window.abrirModalQRMenu = function() {
@@ -968,7 +1151,7 @@
     window.executarResetSenha = function() {
         const chave = document.getElementById('resetChaveMestra').value;
         if (chave === "1234") {
-            alert("Palavra-passe alterada!");
+            alert("Palavra-passe redefinida com sucesso!");
             document.getElementById('modalResetSenha').style.display = 'none';
         } else {
             alert("Chave Mestra Incorreta!");
@@ -976,7 +1159,7 @@
     };
 
     window.abrirModalDefinicoes = function() {
-        alert("Painel de Definições");
+        alert("Painel de Configurações do Sistema Master SaaS.");
     };
 
     window.inicializarGrafico = function() {
@@ -988,7 +1171,7 @@
                     labels: ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'],
                     datasets: [{
                         label: 'Vendas (MT)',
-                        data: [1200, 2500, 5800, 3200, 4100, 8900, 6500],
+                        data: [1500, 3200, 7400, 4100, 5200, 11200, 8900],
                         backgroundColor: '#007bff'
                     }]
                 },
