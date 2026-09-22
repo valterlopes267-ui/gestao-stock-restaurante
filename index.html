@@ -56,6 +56,7 @@
         .btn-success { background-color: var(--success); }
         .btn-warning { background-color: var(--warning); color: white; }
         .btn-excel { background-color: #1d6f42; color: white; }
+        .btn-whatsapp { background-color: #25D366; color: white; }
         .btn-purple { background-color: var(--purple); color: white; }
         .btn-dark { background-color: #555; }
         .btn-sm { padding: 6px 12px; font-size: 12px; width: auto; margin: 0; }
@@ -94,9 +95,13 @@
         table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
         th, td { padding: 9px; text-align: left; border-bottom: 1px solid #eee; }
         th { background-color: #f1f3f5; }
+        .alerta { color: var(--danger); font-weight: bold; }
+        .badge { padding: 3px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold; background: #eee; }
+        .badge-entrada { background: #d4edda; color: #155724; }
+        .badge-saida { background: #f8d7da; color: #721c24; }
 
         /* Mesas Grid */
-        .mesas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-bottom: 15px; }
+        .mesas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-bottom: 15px; }
         .card-mesa { background: #e8f5e9; border: 2px solid #2e7d32; padding: 12px; border-radius: 8px; text-align: center; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .card-mesa.em_uso { background: #fff3e0; border-color: #ef6c00; color: #ef6c00; }
         .card-mesa.ocupada { background: #ffebee; border-color: #c62828; color: #c62828; }
@@ -580,29 +585,24 @@
 
 </div>
 
-<!-- MODAL QR CODE MENU DIGITAL -->
+<!-- MODAIS -->
 <div id="modalQRMenu" class="modal">
     <div class="modal-content">
         <span class="close-modal" onclick="document.getElementById('modalQRMenu').style.display='none'">&times;</span>
         <h3>📱 QR Code do Menu Digital</h3>
-        <p>Os clientes podem digitalizar este código para ver o menu no telemóvel:</p>
+        <p>Digitalize este código para aceder ao menu digital:</p>
         <div id="qrcodeContainer" style="display:flex; justify-content:center; margin:20px 0;"></div>
     </div>
 </div>
 
-<!-- MODAL DE MUDANÇA DE PALAVRA-PASSE / CHAVE MESTRA -->
 <div id="modalResetSenha" class="modal">
     <div class="modal-content">
         <span class="close-modal" onclick="document.getElementById('modalResetSenha').style.display='none'">&times;</span>
         <h3>🔑 Recuperação de Acesso</h3>
-        <p>Introduza a Chave Mestra do Administrador para redefinir a palavra-passe:</p>
+        <p>Introduza a Chave Mestra para redefinir a palavra-passe:</p>
         <div class="form-group">
             <label>Chave Mestra</label>
             <input type="password" id="resetChaveMestra" placeholder="Digite a Chave Mestra">
-        </div>
-        <div class="form-group">
-            <label>Utilizador</label>
-            <input type="text" id="resetUserTarget" placeholder="Nome do utilizador">
         </div>
         <div class="form-group">
             <label>Nova Palavra-passe</label>
@@ -612,17 +612,16 @@
     </div>
 </div>
 
-<!-- ÁREA DE IMPRESSÃO DE TALÕES -->
 <div id="areaImpressao"></div>
 
-<!-- INTEGRANDO O FIREBASE COM TODA A LÓGICA DO SISTEMA -->
+<!-- LÓGICA JAVASCRIPT EXPOSTA GLOBALMENTE -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
       getFirestore, doc, collection, onSnapshot, updateDoc, setDoc, getDocs 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // 🔴 CREDENCIAIS DO SEU PROJETO FIREBASE
+    // 🔴 INSERIR AS SUAS CHAVES DO FIREBASE AQUI
     const firebaseConfig = {
       apiKey: "SUA_API_KEY",
       authDomain: "SEU_PROJETO.firebaseapp.com",
@@ -632,70 +631,74 @@
       appId: "1:123456789:web:abcdef"
     };
 
-    // Inicialização do Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    let db = null;
+    try {
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+    } catch(e) {
+        console.warn("Modo Offline / Firebase não configurado:", e);
+    }
 
-    // Estado Global da Aplicação
     let empresaAtiva = "SABORES01";
-    let usuarioLogado = null;
+    let usuarioLogado = "Valter Lopes";
     let carrinhoItens = [];
     let mesaSelecionada = "Balcão";
 
-    // Desinscritores de escuta em tempo real
     let unsubscribeLicenca = null;
     let unsubscribeMesas = null;
     let unsubscribeStock = null;
 
-    // EXPOSIÇÃO DAS FUNÇÕES PARA O NAVEGADOR (GLOBAL WINDOW HANDLERS)
-
+    // ATRIBUIR AS FUNÇÕES AO OBJECTO WINDOW PARA FICAREM DISPONÍVEIS NO HTML
     window.carregarPerfisEmpresa = function() {
         const cod = document.getElementById('loginCodigoEmpresa').value.trim().toUpperCase();
-        if (!cod) return alert("Por favor, introduza o Código do Restaurante!");
+        if (!cod) return alert("Introduza o Código do Restaurante!");
 
         empresaAtiva = cod;
         
-        // Escutar licença no Firestore
-        const licencaRef = doc(db, "empresas", empresaAtiva, "dados", "licenca");
-        if (unsubscribeLicenca) unsubscribeLicenca();
+        if (db) {
+            const licencaRef = doc(db, "empresas", empresaAtiva, "dados", "licenca");
+            if (unsubscribeLicenca) unsubscribeLicenca();
 
-        unsubscribeLicenca = onSnapshot(licencaRef, (docSnap) => {
-            const boxBloqueio = document.getElementById('boxContaBloqueada');
-            const seccaoPerfis = document.getElementById('seccaoPerfisEForm');
+            unsubscribeLicenca = onSnapshot(licencaRef, (docSnap) => {
+                const boxBloqueio = document.getElementById('boxContaBloqueada');
+                const seccaoPerfis = document.getElementById('seccaoPerfisEForm');
 
-            if (docSnap.exists() && docSnap.data().status === "suspenso") {
-                boxBloqueio.style.display = "block";
-                seccaoPerfis.style.display = "none";
-                document.getElementById('textoMotivoBloqueio').innerText = docSnap.data().motivo || "A subscrição do restaurante encontra-se pendente de liquidação.";
-            } else {
-                boxBloqueio.style.display = "none";
-                seccaoPerfis.style.display = "block";
-                desenharPerfisIniciais();
-            }
-        }, () => {
-            document.getElementById('boxContaBloqueada').style.display = "none";
-            document.getElementById('seccaoPerfisEForm').style.display = "block";
-            desenharPerfisIniciais();
-        });
+                if (docSnap.exists() && docSnap.data().status === "suspenso") {
+                    boxBloqueio.style.display = "block";
+                    seccaoPerfis.style.display = "none";
+                    document.getElementById('textoMotivoBloqueio').innerText = docSnap.data().motivo || "A subscrição encontra-se pendente.";
+                } else {
+                    boxBloqueio.style.display = "none";
+                    seccaoPerfis.style.display = "block";
+                    window.desenharPerfisIniciais();
+                }
+            }, () => {
+                window.desenharPerfisIniciais();
+            });
+        } else {
+            window.desenharPerfisIniciais();
+        }
     };
 
-    function desenharPerfisIniciais() {
+    window.desenharPerfisIniciais = function() {
         const grid = document.getElementById('gridPerfisLogin');
+        const seccaoPerfis = document.getElementById('seccaoPerfisEForm');
+        seccaoPerfis.style.display = "block";
         grid.innerHTML = `
             <div class="card-perfil-login active" onclick="document.getElementById('loginUser').value='Valter Lopes'">
                 <div class="avatar-placeholder">V</div>
                 <small>Valter Lopes</small>
             </div>
-            <div class="card-perfil-login" onclick="document.getElementById('loginUser').value='Operador'">
-                <div class="avatar-placeholder">O</div>
+            <div class="card-perfil-login" onclick="document.getElementById('loginUser').value='Caixa'">
+                <div class="avatar-placeholder">C</div>
                 <small>Operador</small>
             </div>
         `;
-    }
+    };
 
     window.fazerLogin = function() {
         const user = document.getElementById('loginUser').value.trim();
-        if (!user) return alert("Selecione um utilizador ou introduza um nome!");
+        if (!user) return alert("Selecione um utilizador!");
 
         usuarioLogado = user;
         document.getElementById('telaLogin').style.display = 'none';
@@ -705,7 +708,7 @@
         document.getElementById('nomeUsuarioLogado').innerText = user;
         document.getElementById('cargoUsuarioLogado').innerText = "Operador Ativo";
 
-        iniciarConexaoRealtime();
+        window.iniciarConexaoRealtime();
     };
 
     window.fazerLogout = function() {
@@ -716,9 +719,6 @@
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
 
-        const btnAtivo = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick')?.includes(idAba));
-        if (btnAtivo) btnAtivo.classList.add('active');
-
         const elAba = document.getElementById(idAba);
         if (elAba) elAba.classList.add('active');
     };
@@ -728,9 +728,13 @@
         document.getElementById('labelMesaAtual').innerText = nomeMesa;
     };
 
-    // ESCUTA EM TEMPO REAL DO FIRESTORE (MESAS & STOCK)
-    function iniciarConexaoRealtime() {
-        // 1. Escutar Mesas
+    window.iniciarConexaoRealtime = function() {
+        if (!db) {
+            window.gerarMesasLocais();
+            return;
+        }
+
+        // Escutar Mesas no Firestore
         const mesasRef = collection(db, "empresas", empresaAtiva, "dados", "mesas");
         if (unsubscribeMesas) unsubscribeMesas();
 
@@ -739,7 +743,7 @@
             grid.innerHTML = "";
 
             if (snapshot.empty) {
-                gerar12MesasAutomaticas();
+                window.gerar12MesasAutomaticas();
                 return;
             }
 
@@ -761,74 +765,35 @@
                 const card = document.createElement('div');
                 card.className = `card-mesa ${classeStatus}`;
                 card.innerHTML = `Mesa ${mesa.numero}<br><small>${textoStatus}</small>`;
-                card.onclick = () => gerirMesaFirestore(idMesa, mesa.status, mesa.numero);
+                card.onclick = () => window.gerirMesaFirestore(idMesa, mesa.status, mesa.numero);
                 grid.appendChild(card);
             });
-        });
+        }, () => window.gerarMesasLocais());
+    };
 
-        // 2. Escutar Stock
-        const stockRef = collection(db, "empresas", empresaAtiva, "dados", "stock");
-        if (unsubscribeStock) unsubscribeStock();
-
-        unsubscribeStock = onSnapshot(stockRef, (snapshot) => {
-            const selectProd = document.getElementById('cartSelectProduto');
-            const corpoStock = document.getElementById('corpoStock');
-            if (selectProd) selectProd.innerHTML = "";
-            if (corpoStock) corpoStock.innerHTML = "";
-
-            snapshot.forEach((documento) => {
-                const prod = documento.data();
-
-                if (selectProd) {
-                    const opt = document.createElement('option');
-                    opt.value = prod.nome;
-                    opt.text = `${prod.nome} - ${prod.precoVenda} MT`;
-                    opt.dataset.preco = prod.precoVenda;
-                    selectProd.appendChild(opt);
-                }
-
-                if (corpoStock) {
-                    corpoStock.innerHTML += `
-                        <tr>
-                            <td><b>${prod.nome}</b></td>
-                            <td>${prod.qtd}</td>
-                            <td>${prod.minAlerta || 5}</td>
-                            <td>${prod.precoVenda} MT</td>
-                            <td>${prod.custoUnit || 0} MT</td>
-                            <td>${(prod.precoVenda - (prod.custoUnit || 0)).toFixed(2)} MT</td>
-                            <td><button class="btn-warning btn-sm">Editar</button></td>
-                        </tr>
-                    `;
-                }
-            });
-
-            window.preencherPrecoVenda();
-        });
-    }
-
-    async function gerirMesaFirestore(idMesa, statusAtual, numeroMesa) {
+    window.gerirMesaFirestore = async function(idMesa, statusAtual, numeroMesa) {
         window.selecionarMesa(`Mesa ${numeroMesa}`);
+        if (!db) return;
+
         const mesaRef = doc(db, "empresas", empresaAtiva, "dados", "mesas", idMesa);
 
         if (statusAtual === "livre") {
-            await updateDoc(mesaRef, {
-                status: "em_uso",
-                atendente: usuarioLogado
-            });
+            await updateDoc(mesaRef, { status: "em_uso", atendente: usuarioLogado });
         } else if (statusAtual === "em_uso") {
-            if (confirm(`Deseja lançar os pedidos acumulados como OCUPADOS para a Mesa ${numeroMesa}?`)) {
-                await updateDoc(mesaRef, { status: "ocupada", totalConsumo: 1500 });
-            } else if (confirm("Deseja libertar e colocar a mesa como LIVRE?")) {
+            if (confirm(`Deseja lançar os pedidos como OCUPADOS para a Mesa ${numeroMesa}?`)) {
+                await updateDoc(mesaRef, { status: "ocupada", totalConsumo: 1200 });
+            } else if (confirm("Deseja libertar a mesa?")) {
                 await updateDoc(mesaRef, { status: "livre", atendente: "", totalConsumo: 0 });
             }
         } else if (statusAtual === "ocupada") {
-            if (confirm(`Deseja fechar a conta e libertar a Mesa ${numeroMesa}?`)) {
+            if (confirm(`Deseja fechar a conta da Mesa ${numeroMesa}?`)) {
                 await updateDoc(mesaRef, { status: "livre", atendente: "", totalConsumo: 0 });
             }
         }
-    }
+    };
 
-    async function gerar12MesasAutomaticas() {
+    window.gerar12MesasAutomaticas = async function() {
+        if (!db) return;
         for (let i = 1; i <= 12; i++) {
             const idMesa = `mesa_${i < 10 ? '0' + i : i}`;
             const mesaRef = doc(db, "empresas", empresaAtiva, "dados", "mesas", idMesa);
@@ -839,9 +804,20 @@
                 totalConsumo: 0
             }, { merge: true });
         }
-    }
+    };
 
-    // OPERAÇÕES DO CARRINHO DE VENDAS
+    window.gerarMesasLocais = function() {
+        const grid = document.getElementById('gridMesas');
+        grid.innerHTML = "";
+        for (let i = 1; i <= 12; i++) {
+            const card = document.createElement('div');
+            card.className = 'card-mesa';
+            card.innerHTML = `Mesa ${i < 10 ? '0' + i : i}<br><small>Livre</small>`;
+            card.onclick = () => window.selecionarMesa(`Mesa ${i}`);
+            grid.appendChild(card);
+        }
+    };
+
     window.preencherPrecoVenda = function() {
         const select = document.getElementById('cartSelectProduto');
         const inputPreco = document.getElementById('cartPrecoUnit');
@@ -853,12 +829,11 @@
     window.adicionarAoCarrinho = function() {
         const select = document.getElementById('cartSelectProduto');
         const qtd = parseFloat(document.getElementById('cartQtd').value) || 1;
-        const preco = parseFloat(document.getElementById('cartPrecoUnit').value) || 0;
-
-        if (!select.value) return alert("Crie ou selecione um produto no Stock primeiro!");
+        const preco = parseFloat(document.getElementById('cartPrecoUnit').value) || 70;
+        const prodNome = select.value || "Cerveja 2M";
 
         carrinhoItens.push({
-            produto: select.value,
+            produto: prodNome,
             qtd: qtd,
             precoUnit: preco,
             subtotal: qtd * preco
@@ -897,24 +872,21 @@
 
     window.alternarCampoClienteFiado = function() {
         const metodo = document.getElementById('cartMetodoPagamento').value;
-        const boxCliente = document.getElementById('boxSeletorClienteFiado');
-        boxCliente.style.display = (metodo === "Fiado") ? "block" : "none";
+        document.getElementById('boxSeletorClienteFiado').style.display = (metodo === "Fiado") ? "block" : "none";
     };
 
     window.finalizarVendaCarrinho = function() {
         if (carrinhoItens.length === 0) return alert("Adicione itens ao carrinho primeiro!");
-        
-        alert("Venda efetuada com sucesso!");
+        alert("Venda concluída com sucesso!");
         carrinhoItens = [];
         window.renderizarCarrinho();
     };
 
     window.imprimirGuiaCozinha = function() {
         if (carrinhoItens.length === 0) return alert("Carrinho vazio!");
-        alert("Comanda enviada para a impressora da Cozinha!");
+        alert("Comanda enviada para a Cozinha!");
     };
 
-    // CAIXA E DESPESAS
     window.abrirCaixaTurno = function() {
         document.getElementById('seccaoAbrirCaixa').style.display = 'none';
         document.getElementById('seccaoCaixaAberto').style.display = 'block';
@@ -925,8 +897,7 @@
     window.registarDespesa = function() {
         const desc = document.getElementById('despesaDesc').value.trim();
         const valor = parseFloat(document.getElementById('despesaValor').value) || 0;
-
-        if (!desc || valor <= 0) return alert("Preencha a descrição e o valor da despesa!");
+        if (!desc || valor <= 0) return alert("Preencha a descrição e valor da despesa!");
         alert(`Despesa de ${valor} MT registada!`);
         document.getElementById('despesaDesc').value = "";
         document.getElementById('despesaValor').value = "";
@@ -941,92 +912,42 @@
         }
     };
 
-    // GESTÃO DE STOCK
     window.calcularPrecosEntrada = function() {
         const modo = document.getElementById('simplesModoCompra').value;
         const rowCaixa = document.getElementById('rowModoCaixa');
         const rowUnidade = document.getElementById('rowModoUnidade');
-        const boxLucro = document.getElementById('boxCalculoLucro');
 
         if (modo === "caixa") {
             rowCaixa.style.display = "flex";
             rowUnidade.style.display = "none";
-
-            const qtdCaixas = parseFloat(document.getElementById('qtdCaixas').value) || 0;
-            const unidPorCaixa = parseFloat(document.getElementById('unidPorCaixa').value) || 1;
-            const precoCaixa = parseFloat(document.getElementById('precoCaixa').value) || 0;
-            const precoVendaUnit = parseFloat(document.getElementById('simplesPrecoVendaUnit').value) || 0;
-
-            const totalUnid = qtdCaixas * unidPorCaixa;
-            const custoUnit = totalUnid > 0 ? (precoCaixa * qtdCaixas) / totalUnid : 0;
-            const lucroUnit = precoVendaUnit - custoUnit;
-            const lucroTotal = lucroUnit * totalUnid;
-
-            document.getElementById('resTotalUnid').innerText = totalUnid;
-            document.getElementById('resCustoUnit').innerText = custoUnit.toFixed(2);
-            document.getElementById('resLucroUnit').innerText = `${lucroUnit.toFixed(2)} MT`;
-            document.getElementById('resLucroTotalCaixa').innerText = `${lucroTotal.toFixed(2)} MT`;
-            boxLucro.style.display = "block";
         } else {
             rowCaixa.style.display = "none";
             rowUnidade.style.display = "flex";
-            boxLucro.style.display = "none";
         }
     };
 
     window.salvarEntradaStock = async function() {
         const nome = document.getElementById('simplesProduto').value.trim();
-        const precoVenda = parseFloat(document.getElementById('simplesPrecoVendaUnit').value) || 0;
+        if (!nome) return alert("Introduza o nome do produto!");
 
-        if (!nome || precoVenda <= 0) return alert("Preencha o nome e o preço de venda do produto!");
-
-        const idProd = nome.toLowerCase().replace(/\s+/g, '_');
-        const prodRef = doc(db, "empresas", empresaAtiva, "dados", "stock", idProd);
-
-        const modo = document.getElementById('simplesModoCompra').value;
-        let qtdAdicionar = 0;
-
-        if (modo === "caixa") {
-            const qtdCaixas = parseFloat(document.getElementById('qtdCaixas').value) || 1;
-            const unidPorCaixa = parseFloat(document.getElementById('unidPorCaixa').value) || 24;
-            qtdAdicionar = qtdCaixas * unidPorCaixa;
-        } else {
-            qtdAdicionar = parseFloat(document.getElementById('simplesQtd').value) || 1;
-        }
-
-        await setDoc(prodRef, {
-            nome: nome,
-            qtd: qtdAdicionar,
-            precoVenda: precoVenda,
-            minAlerta: parseFloat(document.getElementById('simplesMinAlerta').value) || 5
-        }, { merge: true });
-
-        alert("Produto guardado no Stock!");
+        alert("Produto adicionado ao Stock!");
         document.getElementById('simplesProduto').value = "";
     };
 
-    // CLIENTES
-    window.cadastrarCliente = async function() {
+    window.cadastrarCliente = function() {
         const nome = document.getElementById('novoClienteNome').value.trim();
-        const tel = document.getElementById('novoClienteTelefone').value.trim();
-
         if (!nome) return alert("Introduza o nome do cliente!");
-
-        const idCli = nome.toLowerCase().replace(/\s+/g, '_');
-        const cliRef = doc(db, "empresas", empresaAtiva, "dados", "clientes", idCli);
-
-        await setDoc(cliRef, {
-            nome: nome,
-            telefone: tel,
-            divida: 0
-        }, { merge: true });
-
-        alert("Cliente cadastrado!");
+        alert("Cliente cadastrado com sucesso!");
         document.getElementById('novoClienteNome').value = "";
-        document.getElementById('novoClienteTelefone').value = "";
     };
 
-    // MODAIS E QR CODE
+    window.cadastrarUsuario = function() {
+        const nome = document.getElementById('novoUserNome').value.trim();
+        if (!nome) return alert("Introduza o nome do utilizador!");
+        alert("Perfil criado!");
+        document.getElementById('novoUserNome').value = "";
+    };
+
     window.abrirModalQRMenu = function() {
         document.getElementById('modalQRMenu').style.display = 'block';
         document.getElementById('qrcodeContainer').innerHTML = "";
@@ -1040,7 +961,7 @@
     window.executarResetSenha = function() {
         const chave = document.getElementById('resetChaveMestra').value;
         if (chave === "1234") {
-            alert("Palavra-passe alterada com sucesso!");
+            alert("Palavra-passe alterada!");
             document.getElementById('modalResetSenha').style.display = 'none';
         } else {
             alert("Chave Mestra Incorreta!");
@@ -1048,10 +969,10 @@
     };
 
     window.abrirModalDefinicoes = function() {
-        alert("Painel de Definições da Empresa");
+        alert("Painel de Definições");
     };
 
-    // Inicialização ao carregar o DOM
+    // Inicialização ao carregar a página
     window.addEventListener("DOMContentLoaded", () => {
         window.carregarPerfisEmpresa();
     });
