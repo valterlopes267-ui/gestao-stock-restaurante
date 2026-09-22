@@ -12,7 +12,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Restaurante Pro">
-    <link rel="apple-touch-icon" href="icon-192.png">
 
     <!-- Bibliotecas Externas (Excel, Gráficos e QR Code) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -64,17 +63,12 @@
         .grid-perfis-login { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
         .card-perfil-login { background: #f8f9fa; border: 2px solid #e9ecef; padding: 12px; border-radius: 12px; width: 100px; text-align: center; cursor: pointer; transition: 0.2s; }
         .card-perfil-login:hover, .card-perfil-login.ativo { border-color: var(--primary); background: #e7f5ff; transform: translateY(-2px); }
-        .avatar-img { width: 65px; height: 65px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); margin-bottom: 6px; background: #ddd; }
         .avatar-placeholder { width: 65px; height: 65px; border-radius: 50%; background: #007bff; color: white; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: bold; margin: 0 auto 6px auto; }
 
         /* Status do Caixa Banner */
         .status-caixa-banner { padding: 12px; border-radius: 6px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
         .caixa-aberto { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .caixa-fechado { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-
-        /* Resumo de Lucro e Alertas */
-        .box-calculo-lucro { background: #e7f5ff; border: 1px solid #74c0fc; padding: 12px; border-radius: 6px; margin-bottom: 15px; display: none; }
-        .alerta-stock-box { background: #fff3cd; border: 1px solid #ffeba2; color: #856404; padding: 10px; border-radius: 6px; margin-bottom: 15px; display: none; }
 
         /* Header do Utilizador */
         .header-usuario { display: flex; justify-content: space-between; align-items: center; background: #e9ecef; padding: 12px 18px; border-radius: 8px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
@@ -95,9 +89,9 @@
         th, td { padding: 9px; text-align: left; border-bottom: 1px solid #eee; }
         th { background-color: #f1f3f5; }
 
-        /* Mesas Grid */
-        .mesas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; margin-bottom: 15px; }
-        .card-mesa { background: #e8f5e9; border: 2px solid #2e7d32; padding: 12px; border-radius: 8px; text-align: center; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        /* Grelha de Mesas */
+        .mesas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 15px; }
+        .card-mesa { background: #e8f5e9; border: 2px solid #2e7d32; padding: 14px; border-radius: 8px; text-align: center; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .card-mesa.em_uso { background: #fff3e0; border-color: #ef6c00; color: #ef6c00; }
         .card-mesa.ocupada { background: #ffebee; border-color: #c62828; color: #c62828; }
 
@@ -105,14 +99,6 @@
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); overflow-y: auto; }
         .modal-content { background: white; max-width: 550px; margin: 5% auto; padding: 20px; border-radius: 8px; position: relative; }
         .close-modal { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; }
-
-        /* Estilos de Impressão */
-        #areaImpressao { display: none; }
-        @media print {
-            body * { visibility: hidden; }
-            #areaImpressao, #areaImpressao * { visibility: visible; }
-            #areaImpressao { display: block; position: absolute; left: 0; top: 0; width: 80mm; font-family: 'Courier New', Courier, monospace; font-size: 11px; padding: 5px; }
-        }
 
         @media (max-width: 768px) {
             .form-row { flex-direction: column; gap: 0; }
@@ -162,11 +148,11 @@
 
             <div class="form-group">
                 <label>Utilizador Selecionado</label>
-                <input type="text" id="loginUser" placeholder="Selecione um perfil acima ou digite">
+                <input type="text" id="loginUser" placeholder="Selecione um perfil ou digite">
             </div>
             <div class="form-group">
                 <label>Palavra-passe</label>
-                <input type="password" id="loginPass" placeholder="Digite a sua palavra-passe">
+                <input type="password" id="loginPass" placeholder="Digite a palavra-passe">
             </div>
             <button id="btnEntrarSistema" style="margin-top:10px;">Entrar no Sistema</button>
         </div>
@@ -177,16 +163,13 @@
         
         <div class="header-usuario">
             <div style="display:flex; align-items:center; gap:10px;">
-                <div id="headerAvatarBox"></div>
                 <div>
                     <strong>Empresa: <span id="nomeEmpresaHeader" style="color:var(--purple); text-transform:uppercase;"></span></strong> | 
-                    Sessão: <span id="nomeUsuarioLogado" style="color:var(--primary); text-transform:uppercase;"></span><br>
-                    <small id="cargoUsuarioLogado" style="color:#666;"></small>
+                    Sessão: <span id="nomeUsuarioLogado" style="color:var(--primary); text-transform:uppercase;"></span>
                 </div>
             </div>
             <div style="display:flex; gap:8px; align-items:center;">
                 <button class="btn-purple btn-sm" id="btnQRMenu">📱 QR Menu Digital</button>
-                <button id="btnDefinicoes" class="btn-warning btn-sm">⚙️ Definições</button>
                 <button class="btn-dark btn-sm" id="btnLogout">Sair</button>
             </div>
         </div>
@@ -195,11 +178,6 @@
         <div id="bannerStatusCaixa" class="status-caixa-banner caixa-fechado">
             <span id="textoStatusCaixa">🔴 Caixa Encerrado</span>
             <button id="btnAcaoCaixaHeader" class="btn-success btn-sm">Abrir Caixa</button>
-        </div>
-
-        <!-- ALERTA DE STOCK MÍNIMO -->
-        <div id="boxAlertaStockGlobal" class="alerta-stock-box">
-            <strong>⚠️ Alerta de Stock Crítico:</strong> Existem produtos com quantidade abaixo do limite mínimo!
         </div>
 
         <!-- MENU DE ABAS -->
@@ -214,27 +192,31 @@
 
         <!-- ================= ABA 1: VENDAS & MESAS ================= -->
         <div id="abaVendas" class="tab-content active">
-            <h4>Selecionar Mesa / Comanda</h4>
+            <h4>Estado das Mesas em Tempo Real</h4>
             <div class="mesas-grid" id="gridMesas"></div>
 
             <div style="background:#eef7ff; border:1px solid #b6e0fe; padding:15px; border-radius:8px;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <h4 style="margin:0;">Atendimento: <span id="labelMesaAtual" style="color:var(--primary);">Balcão (Venda Direta)</span></h4>
-                    <button class="btn-dark btn-sm" id="btnLimparBalcao">Limpar para Balcão</button>
+                    <button class="btn-dark btn-sm" id="btnLimparBalcao">Limpar p/ Balcão</button>
                 </div>
                 
                 <div class="form-row" style="margin-top:12px;">
                     <div class="form-group">
                         <label>Produto</label>
-                        <select id="cartSelectProduto"></select>
+                        <select id="cartSelectProduto">
+                            <option value="2M">Cerveja 2M - 70 MT</option>
+                            <option value="Laurentina">Laurentina Preta - 80 MT</option>
+                            <option value="Agua">Água Mineral 500ml - 40 MT</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label>Quantidade</label>
-                        <input type="number" id="cartQtd" value="1" min="0.1" step="0.1">
+                        <input type="number" id="cartQtd" value="1" min="1">
                     </div>
                     <div class="form-group">
                         <label>Preço Unit. (MT)</label>
-                        <input type="number" id="cartPrecoUnit" step="0.5">
+                        <input type="number" id="cartPrecoUnit" value="70">
                     </div>
                     <div class="form-group" style="align-self:flex-end;">
                         <button type="button" class="btn-success" id="btnAdicionarCarrinho">+ Adicionar Item</button>
@@ -244,43 +226,17 @@
                 <div class="table-responsive">
                     <table>
                         <thead>
-                            <tr><th>Produto</th><th>Qtd</th><th>Preço Unit.</th><th>Subtotal</th><th>Ação</th></tr>
+                            <tr><th>Produto</th><th>Qtd</th><th>Preço Unit.</th><th>Subtotal</th></tr>
                         </thead>
-                        <tbody id="corpoCarrinho"></tbody>
+                        <tbody id="corpoCarrinho">
+                            <tr><td colspan="4" style="text-align:center; color:#888;">Nenhum item adicionado.</td></tr>
+                        </tbody>
                     </table>
                 </div>
 
-                <div class="form-row" style="margin-top:15px; align-items:center;">
-                    <div class="form-group">
-                        <label>Desconto na Conta (MT)</label>
-                        <input type="number" id="cartDesconto" value="0" min="0" step="0.5">
-                    </div>
-                    <div class="form-group">
-                        <label>Forma de Pagamento / Conta</label>
-                        <select id="cartMetodoPagamento">
-                            <option value="Numerário">💵 Numerário (Espécie)</option>
-                            <option value="M-Pesa">📱 M-Pesa</option>
-                            <option value="e-Mola">📱 e-Mola</option>
-                            <option value="POS">💳 POS (Cartão)</option>
-                            <option value="Fiado">👥 Venda a Fiado (Conta Cliente)</option>
-                        </select>
-                    </div>
-                    <div class="form-group" id="boxSeletorClienteFiado" style="display:none;">
-                        <label>Selecionar Cliente</label>
-                        <select id="cartSelectClienteFiado"></select>
-                    </div>
-                </div>
-
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; flex-wrap:wrap; gap:10px;">
-                    <div>
-                        <button class="btn-warning btn-sm" id="btnImprimirCozinha">🍳 Pedido p/ Cozinha</button>
-                    </div>
-                    <div style="text-align:right;">
-                        <span style="font-size:1.25em; font-weight:bold;">Total Final: <span id="cartTotalTexto" style="color:var(--success);">0.00 MT</span></span>
-                    </div>
-                    <div>
-                        <button class="btn-success" style="font-size:1.1em;" id="btnFinalizarVenda">✅ Fechar & Emitir Recibo</button>
-                    </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px;">
+                    <span style="font-size:1.2em; font-weight:bold;">Total: <span id="cartTotalTexto" style="color:var(--success);">0.00 MT</span></span>
+                    <button class="btn-success" style="font-size:1.05em;" id="btnFinalizarVenda">✅ Finalizar Venda</button>
                 </div>
             </div>
         </div>
@@ -288,159 +244,37 @@
         <!-- ================= ABA 2: CAIXA & DESPESAS ================= -->
         <div id="abaCaixa" class="tab-content">
             <h2>Controlo de Caixa e Turnos</h2>
-            
-            <div id="seccaoAbrirCaixa" style="display:none; background:#eef7ff; padding:15px; border-radius:8px; border:1px solid #b6e0fe;">
-                <h4>Abrir Turno de Caixa</h4>
-                <div class="form-group">
-                    <label>Fundo de Maneio / Troco Inicial (MT)</label>
-                    <input type="number" id="inputFundoManeio" value="1000" min="0" step="50">
-                </div>
-                <button class="btn-success" id="btnConfirmarAbrirCaixa">🔓 Confirmar Abertura de Caixa</button>
-            </div>
-
-            <div id="seccaoCaixaAberto" style="display:none;">
-                <div class="cards-grid">
-                    <div class="card-stat"><h4>Fundo Inicial</h4><div class="valor-card" id="cxValFundo">0.00 MT</div></div>
-                    <div class="card-stat verde"><h4>Entradas Vendas (Espécie)</h4><div class="valor-card" id="cxValVendasNum">0.00 MT</div></div>
-                    <div class="card-stat vermelho"><h4>Saídas / Despesas</h4><div class="valor-card" id="cxValDespesas">0.00 MT</div></div>
-                    <div class="card-stat roxo"><h4>Saldo Esperado em Gaveta</h4><div class="valor-card" id="cxValSaldoGaveta">0.00 MT</div></div>
-                </div>
-
-                <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-top:15px;">
-                    <h4>Registar Saída de Caixa / Despesa do Dia</h4>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Descrição da Despesa</label>
-                            <input type="text" id="despesaDesc" placeholder="Ex: Compra de Gelo, Transporte, Carvão">
-                        </div>
-                        <div class="form-group">
-                            <label>Valor (MT)</label>
-                            <input type="number" id="despesaValor" min="1" step="0.5" placeholder="Ex: 250 MT">
-                        </div>
-                        <div class="form-group" style="align-self:flex-end;">
-                            <button class="btn-saida" id="btnRegistarDespesa">Registar Saída</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="margin-top:20px; text-align:right;">
-                    <button class="btn-saida btn-sm" id="btnEncerrarCaixa">🔒 Encerrar Turno de Caixa</button>
-                </div>
+            <div class="cards-grid">
+                <div class="card-stat"><h4>Fundo Inicial</h4><div class="valor-card">1,000.00 MT</div></div>
+                <div class="card-stat verde"><h4>Entradas Vendas</h4><div class="valor-card">0.00 MT</div></div>
+                <div class="card-stat vermelho"><h4>Saídas / Despesas</h4><div class="valor-card">0.00 MT</div></div>
             </div>
         </div>
 
         <!-- ================= ABA 3: CLIENTES & FIADO ================= -->
         <div id="abaFiado" class="tab-content">
-            <h2>Gestão de Clientes & Contas a Fiado</h2>
-            
-            <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:15px;">
-                <h4>Cadastrar Novo Cliente</h4>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Nome Completo</label>
-                        <input type="text" id="novoClienteNome" placeholder="Nome do cliente">
-                    </div>
-                    <div class="form-group">
-                        <label>Telefone / WhatsApp</label>
-                        <input type="text" id="novoClienteTelefone" placeholder="+258 84/82/86/87...">
-                    </div>
-                    <div class="form-group" style="align-self:flex-end;">
-                        <button class="btn-primary" id="btnCadastrarCliente">+ Cadastrar Cliente</button>
-                    </div>
-                </div>
-            </div>
-
-            <h4>Clientes Cadastrados e Saldo Devedor</h4>
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr><th>Nome</th><th>Telefone</th><th>Dívida Atual</th><th>Ações</th></tr>
-                    </thead>
-                    <tbody id="corpoTabelaClientes"></tbody>
-                </table>
-            </div>
+            <h2>Gestão de Clientes & Fiado</h2>
+            <p>Lista de clientes e saldos pendentes.</p>
         </div>
 
         <!-- ================= ABA 4: GESTÃO DE STOCK ================= -->
         <div id="abaStock" class="tab-content">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
-                <h2>Gestão de Stock na Despensa</h2>
-                <button class="btn-excel btn-sm" id="btnExportarStock">📊 Exportar Stock para Excel</button>
-            </div>
-
-            <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:15px;">
-                <h4>📥 Dar Entrada de Produtos no Stock (Compras / Reposição)</h4>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Produto / Bebida</label>
-                        <input type="text" id="simplesProduto" placeholder="Ex: Cerveja 2M, Coca-Cola 330ml">
-                    </div>
-                    <div class="form-group">
-                        <label>Quantidade Total de Unidades</label>
-                        <input type="number" id="simplesQtd" value="1" min="1">
-                    </div>
-                    <div class="form-group">
-                        <label style="color:var(--success);">Preço de Venda por Unidade (MT)</label>
-                        <input type="number" id="simplesPrecoVendaUnit" step="0.5" placeholder="Ex: 70 MT">
-                    </div>
-                    <div class="form-group" style="align-self:flex-end;">
-                        <button class="btn-success" id="btnSalvarStock">📥 Atualizar Stock</button>
-                    </div>
-                </div>
-            </div>
-
-            <h4>📦 Quantidade Atual de Produtos em Stock</h4>
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Produto</th>
-                            <th>Stock Atual</th>
-                            <th>Preço Venda Unit.</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="corpoStock"></tbody>
-                </table>
-            </div>
+            <h2>Gestão de Stock na Despensa</h2>
+            <p>Lista de produtos e quantidades disponíveis.</p>
         </div>
 
-        <!-- ================= ABA 5: GESTÃO DE PERFIS ================= -->
+        <!-- ================= ABA 5: PERFIS ================= -->
         <div id="abaUsuarios" class="tab-content col-admin">
-            <h2>Gestão de Perfis dos Utilizadores</h2>
-            <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:20px;">
-                <h4>Criar Novo Perfil</h4>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Nome do Utilizador</label>
-                        <input type="text" id="novoUserNome" placeholder="Ex: joao, maria">
-                    </div>
-                    <div class="form-group">
-                        <label>Palavra-passe</label>
-                        <input type="password" id="novoUserSenha" placeholder="Senha do utilizador">
-                    </div>
-                    <div class="form-group">
-                        <label>Tipo de Permissão</label>
-                        <select id="novoUserTipo">
-                            <option value="vendedor">🛒 Operador de Caixa / Vendedor</option>
-                            <option value="admin">⚙️ Administrador (Acesso Total)</option>
-                        </select>
-                    </div>
-                    <div class="form-group" style="align-self:flex-end;">
-                        <button class="btn-success" id="btnCadastrarUsuario">+ Criar Perfil</button>
-                    </div>
-                </div>
-            </div>
+            <h2>Gestão de Perfis</h2>
+            <p>Configuração de funcionários e permissões.</p>
         </div>
 
-        <!-- ================= ABA 6: DASHBOARD & RELATÓRIOS ================= -->
+        <!-- ================= ABA 6: DASHBOARD ================= -->
         <div id="abaDashboard" class="tab-content col-admin">
             <h2>Painel Financeiro & Relatórios</h2>
             <div class="cards-grid">
-                <div class="card-stat verde"><h4>Total Vendas (Hoje)</h4><div class="valor-card" id="dashTotalVendasHoje">0.00 MT</div></div>
-                <div class="card-stat laranja"><h4>Lucro Estimado</h4><div class="valor-card" id="dashLucroHoje">0.00 MT</div></div>
-                <div class="card-stat vermelho"><h4>Total Despesas</h4><div class="valor-card" id="dashDespesasHoje">0.00 MT</div></div>
-                <div class="card-stat roxo"><h4>Total Fiado Pendente</h4><div class="valor-card" id="dashFiadoPendente">0.00 MT</div></div>
+                <div class="card-stat verde"><h4>Total Vendas (Hoje)</h4><div class="valor-card">0.00 MT</div></div>
+                <div class="card-stat laranja"><h4>Lucro Estimado</h4><div class="valor-card">0.00 MT</div></div>
             </div>
         </div>
 
@@ -448,18 +282,14 @@
 
 </div>
 
-<!-- MODAL QR CODE MENU DIGITAL -->
+<!-- MODAL QR CODE -->
 <div id="modalQRMenu" class="modal">
     <div class="modal-content">
         <span class="close-modal" id="fecharQRModal">&times;</span>
         <h3>📱 QR Code do Menu Digital</h3>
-        <p>Os clientes podem digitalizar este código para ver o menu no telemóvel:</p>
         <div id="qrcodeContainer" style="display:flex; justify-content:center; margin:20px 0;"></div>
     </div>
 </div>
-
-<!-- AREA DE IMPRESSÃO -->
-<div id="areaImpressao"></div>
 
 <!-- LÓGICA JAVASCRIPT & FIREBASE -->
 <script type="module">
@@ -468,7 +298,7 @@
       getFirestore, doc, collection, onSnapshot, updateDoc, setDoc 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // 🔴 CREDENCIAIS DO SEU FIREBASE
+    // 🔴 COLE AQUI AS SUAS CHAVES REAIS DO FIREBASE CONFIG:
     const firebaseConfig = {
       apiKey: "Sua_Key_Real_Aqui",
       authDomain: "Seu_Domain_Real_Aqui",
@@ -498,7 +328,7 @@
         });
     });
 
-    // Validar Licença e Mostrar Perfis
+    // Validar Licença e Carregar Perfis
     document.getElementById('btnValidarLicenca').addEventListener('click', () => {
         const cod = document.getElementById('loginCodigoEmpresa').value.trim().toUpperCase();
         if (!cod) return alert("Introduza o Código do Restaurante!");
@@ -524,7 +354,7 @@
                 seccaoPerfis.style.display = "block";
                 carregarPerfisIniciais();
             }
-        }, (err) => {
+        }, () => {
             document.getElementById('boxContaBloqueada').style.display = "none";
             document.getElementById('seccaoPerfisEForm').style.display = "block";
             carregarPerfisIniciais();
@@ -637,7 +467,7 @@
     document.getElementById('btnQRMenu').addEventListener('click', () => {
         document.getElementById('modalQRMenu').style.display = 'block';
         document.getElementById('qrcodeContainer').innerHTML = "";
-        new QRCode(document.getElementById("qrcodeContainer"), `https://menu-${empresaAtiva.toLowerCase()}.vercel.app`);
+        new QRCode(document.getElementById("qrcodeContainer"), `https://menu-${empresaAtiva.toLowerCase()}.com`);
     });
 
     document.getElementById('fecharQRModal').addEventListener('click', () => {
